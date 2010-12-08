@@ -89,22 +89,60 @@ Production check
 Production monitor
 ------------------
 1. Grab the prod_monitor folder from the package and upload it to your
- 'monitoring site' and activate the module
+ 'monitoring site' and activate the module.
+2. Make sure that the site you wish to monitor is running the prod_check module
+3. Navigate to the prod_check settings page and activate XMLRPC and add an API
+ key to 'secure' the connection. The key is limited to 128 characters.
+4. Add the site to the Production monitor overview page on
+ /admin/reports/prod-monitor
+5. Enter the url and the API key and hit 'Get settings'. All available checks
+ are now retrieved from the remote site. You can uncheck those that you do not
+ wish to monitor.
+6. If you wish to fetch the data immediately, check the appropriate box and save
+ the settings. Good to go!
+
+Nagios
+------
+1. Download and install the Nagios module from http://drupal.org/project/nagios
+ as per its readme instructions
+2. Enable Nagios support in the prod_check module on /admin/settings/prod-check
+ by ticking the appropriate box.
+3. Untick the checboxes for those items you do not whish to be monitored by
+ Nagios.
+4. Save the settings and you're good to go!
+
 
 Hidden link
 ===========
 Production check adds a 'hidden link' to the site where you can check the APC
 status of your site. This page can be found on /admin/reports/status/apc.
-This is in analogy with the system module that adds these 'hidden pages:
+This is in analogy with the system module that adds these 'hidden pages':
  /admin/reports/status/php
  /admin/reports/status/sql
 
 Truely unmissable when setting up your site on a production server to check if
 all is well!
 
-Usage
-=====
-Todo
+
+The detailed report page
+========================
+
+The page is divided into 4 sections:
+
+ - Settings: checks various Drupal settings
+ - Server: checks that are 'outside of Drupal' such as APC and wether or not you
+           have removed the release note files from the root.
+ - Performance: checks relevant to the performance settings in Drupal such as
+                page / block caching.
+ - Modules: checks if certain modules are on / off
+ - SEO: performs very basic SEO checks such as 'is Google Analytics activated
+        and did you provide a GA account number.
+
+The sections might shift over time (maybe some stuff should go under a
+'Security' section etc.).
+
+The checks itself should be self explanatory to Drupal developers, so they won't
+be described in detail here.
 
 
 Support
@@ -113,4 +151,3 @@ Support
 For support requests, bug reports, and feature requests, please us the issue cue
 of Menu Clone on http://drupal.org/project/issues/prod_check.
 
-Module sponsored by Nascom.
