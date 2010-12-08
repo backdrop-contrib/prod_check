@@ -1,0 +1,66 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_schema().
+ */
+function prod_monitor_schema() {
+  return array(
+    'prod_monitor_sites' => array(
+      'description' => t('Holds all sites and data monitored by Production monitor.'),
+      'fields' => array(
+        'id' => array(
+          'description' => t('The primary identifier for a site.'),
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'url' => array(
+          'description' => t('URL of the website to monitor.'),
+          'type' => 'text',
+          'size' => 'normal',
+          'default' => NULL,
+        ),
+        'settings' => array(
+          'description' => t('All settings related to the site.'),
+          'type' => 'text',
+          'size' => 'normal',
+          'default' => NULL,
+        ),
+        'data' => array(
+          'description' => t('All data collected through XMLRPC in serialized form.'),
+          'type' => 'text',
+          'size' => 'medium',
+          'default' => NULL,
+        ),
+        'added' => array(
+          'description' => 'The Unix timestamp when the site was added.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0
+        ),
+        'lastupdate' => array(
+          'description' => 'The Unix timestamp when the data was most recently updated.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+      ),
+      'primary key' => array('id'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function prod_monitor_install() {
+  drupal_install_schema('prod_monitor');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function prod_monitor_uninstall() {
+  drupal_uninstall_schema('prod_monitor');
+}
