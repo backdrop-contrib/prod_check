@@ -639,6 +639,7 @@ function _prod_check_release_notes($caller = 'internal') {
 }
 
 // --- PERFORMANCE ---
+//TODO: add/integrate boost checks!
 
 // Page cache
 function _prod_check_page_cache($caller = 'internal') {
