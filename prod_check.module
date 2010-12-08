@@ -822,7 +822,7 @@ function _prod_check_devel($caller = 'internal') {
 
   $enabled = array();
   foreach ($modules as $key => &$data) {
-    $data['error'] = (module_exists($data['name']) ? TRUE : FALSE;
+    $data['error'] = (module_exists($data['name'])) ? TRUE : FALSE;
     $title = $data['title'];
     $path = $data['path'];
     if ($caller != 'internal') {
