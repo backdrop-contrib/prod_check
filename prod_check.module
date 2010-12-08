@@ -365,6 +365,7 @@ function _prod_check_functions() {
     'description' => 'Checks certain server site parameters such as APC.',
     'functions' => array(
       'apc' => 'APC',
+      'release_notes' => 'Release notes',
     ),
   );
 
@@ -565,29 +566,29 @@ function _prod_check_apc($caller = 'internal') {
   if (!function_exists('apc_cache_info')) {
 	  $desc_nok = t('!link does not appear to be running.', prod_check_link_array($title, $path));
     $val_nok = t('Disabled');
-    $state = FALSE;
+    $error = TRUE;
   }
   else if ($cache=@apc_cache_info('opcode')) {
     if ($cache['num_misses'] >= $cache['num_hits']) {
   	  $desc_nok = t('!link not properly configured, too many misses', prod_check_link_array($title, $path)) .': '.t('hits').': '.$cache['num_hits'].', '.t('misses').': '.$cache['num_misses'].'.';
       $val_nok = t('Not functioning properly.');
-      $state = FALSE;
+      $error = TRUE;
     }
     else if ($cache['num_misses'] < $cache['num_hits']) {
   	  $desc_ok = t('!link running fine', prod_check_link_array($title, $path)) .': '.t('hits').': '.$cache['num_hits'].', '.t('misses').': '.$cache['num_misses'].'.';
       $val_ok = t('Enabled');
-      $state = TRUE;
+      $error = FALSE;
     }
   }
   else {
     $desc_nok = t('Could not retrieve !link cache data.', prod_check_link_array($title, $path));
     $val_nok = t('Not functioning properly.');
-    $state = FALSE;
+    $error = TRUE;
   }
 
   $check['prod_check_apc'] = array(
     '#title' => t($title),
-    '#state' => $state,
+    '#state' => !$error,
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
@@ -595,6 +596,45 @@ function _prod_check_apc($caller = 'internal') {
     '#description_nok' => $desc_nok,
     '#nagios_key' => 'APC',
     '#nagios_type' => 'perf',
+  );
+
+  return prod_check_execute_check($check, $caller);
+}
+
+// .txt files present in root check
+function _prod_check_release_notes($caller = 'internal') {
+  $check = array();
+  $title = 'Release notes';
+
+  $files = array(
+    'CHANGELOG.txt',
+    'COPYRIGHT.txt',
+    'INSTALL.mysql.txt',
+    'INSTALL.pgsql.txt',
+    'INSTALL.txt',
+    'LICENSE.txt',
+    'MAINTAINERS.txt',
+    'UPGRADE.txt',
+  );
+
+  $error = FALSE;
+  for ($i = 0; $i < count($files); $i++) {
+    if (file_exists(base_path().$files[$i])) {
+      $error = TRUE;
+      break;
+    }
+  }
+
+  $check['prod_check_release_notes'] = array(
+    '#title' => t($title),
+    '#state' => !$error,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
+    '#value_ok'  => t('Release note .txt files have been removed.'),
+    '#value_nok'  => t('Release note .txt files still present on your server!'),
+    '#description_ok'  => t('Status is OK for production use.'),
+    '#description_nok' => t('Leaving the release note .txt files present on the webserver is a security risk. A malicious user can easily determine what version of Drupal you are using by reading these files and quickly check if there are exploitable security issues and thus launch an attack on your site.'),
+    '#nagios_key' => 'REL',
+    '#nagios_type' => 'state',
   );
 
   return prod_check_execute_check($check, $caller);
@@ -745,7 +785,7 @@ function _prod_check_update_status($caller = 'internal') {
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
-    '#description_ok'  => t('Your settings are ok for production use.'),
+    '#description_ok'  => t('Your settings are OK for production use.'),
     '#description_nok' => t('You have enabled the !link module. It would be better to turn this off on production, contrary to what Drupal core claims, and keep it running on development. Updating and testing should happen on development before deploying to production anyway.', prod_check_link_array($title, $path)),
     '#nagios_key' => 'UPD',
     '#nagios_type' => 'state',
@@ -756,27 +796,54 @@ function _prod_check_update_status($caller = 'internal') {
 
 // Devel
 function _prod_check_devel($caller = 'internal') {
-  $check = array();
+  $checks = array();
 
-  $title = 'Devel';
-  $path = 'admin/settings/devel';
-  if ($caller != 'internal') {
-    $path = PRODCHECK_BASEURL . $path;
-  }
-
-  $check['prod_check_devel'] = array(
-    '#title' => t($title),
-    '#state' => !module_exists('devel'),
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
-    '#value_ok'  => t('Enabled'),
-    '#value_nok'  => t('Disabled'),
-    '#description_ok'  => prod_check_ok_title($title, $path),
-    '#description_nok' => t('You have enabled the !link module. This should not be running on a production environment!', prod_check_link_array($title, $path)),
-    '#nagios_key' => 'DVL',
-    '#nagios_type' => 'state',
+  $modules = array(
+    'DVL' = array(
+      'name' => 'devel',
+      'title' => 'Devel',
+      'path' => 'admin/settings/devel',
+    ),
+    'DVG' = array(
+      'name' => 'devel_generate',
+      'title' => 'Devel generate'
+      'path' => 'admin/generate',
+    ),
+    'DVN' = array(
+      'name' => 'devel_node_access',
+      'title' => 'Devel node access'
+      'path' => 'admin/settings/devel',
+    ),
+    'DVT' = array(
+      'name' => 'devel_themer',
+      'title' => 'Theme developer'
+      'path' => 'admin/settings/devel_themer',
+    ),
   );
 
-  return prod_check_execute_check($check, $caller);
+  $enabled = array();
+  foreach ($modules as $key => &$data) {
+    $data['error'] = (module_exists($data['name']) ? TRUE : FALSE;
+    $title = $data['title'];
+    $path = $data['path'];
+    if ($caller != 'internal') {
+      $path = PRODCHECK_BASEURL . $path;
+    }
+
+    $checks['prod_check_'.$data['name']] = array(
+      '#title' => t($title),
+      '#state' => !$data['error'],
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
+      '#value_ok'  => t('Disbled'),
+      '#value_nok'  => t('Enabled'),
+      '#description_ok'  => t('Your settings are OK for production use.'),
+      '#description_nok' => t('You have enabled the !link module. This should not be running on a production environment!', prod_check_link_array($title, $path)),
+      '#nagios_key' => $key,
+      '#nagios_type' => 'state',
+    );
+  }
+
+  return prod_check_execute_check($checks, $caller);
 }
 
 // Search config
