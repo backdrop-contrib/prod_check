@@ -1,12 +1,10 @@
 <?php
 // $Id$
 
-// TODO: Write help -> don't forget 'PRODCHECK_EMAIL' + APC password!
-
 /*
- * Modify the mailaddress below to (part of) the dev address you always use when
- * building sites. This way the e-mail check will function properly for your
- * environment.
+ * Modify the '--- change this ---' part below to (part of) the dev address you
+ * always use when building sites. This way the e-mail check will function
+ * properly for your environment.
  * This was not put in a settings form to allow for easy deployment on many
  * without having to adjust settings all the time. Strongarm seemed overkill.
  * Maybe I'll rethink this, not sure about it.
@@ -330,7 +328,7 @@ function prod_check_ok_title($title, $path, $text = 'Your !link settings are OK 
 }
 
 /**
- * Helper function to generate link array to pass to the T function
+ * Helper function to generate link array to pass to the t() function
  */
 function prod_check_link_array($title, $path) {
   return array('!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>');
@@ -362,7 +360,7 @@ function _prod_check_functions() {
   // Server
   $functions['server'] = array(
     'title' => 'Server',
-    'description' => 'Checks certain server site parameters such as APC.',
+    'description' => 'Checks certain server side parameters such as APC.',
     'functions' => array(
       'apc' => 'APC',
       'release_notes' => 'Release notes',
@@ -568,7 +566,7 @@ function _prod_check_apc($caller = 'internal') {
     $val_nok = t('Disabled');
     $error = TRUE;
   }
-  else if ($cache=@apc_cache_info('opcode')) {
+  else if ($cache = @apc_cache_info('opcode')) {
     if ($cache['num_misses'] >= $cache['num_hits']) {
   	  $desc_nok = t('!link not properly configured, too many misses', prod_check_link_array($title, $path)) .': '.t('hits').': '.$cache['num_hits'].', '.t('misses').': '.$cache['num_misses'].'.';
       $val_nok = t('Not functioning properly.');
