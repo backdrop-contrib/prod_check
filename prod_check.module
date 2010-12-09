@@ -798,22 +798,22 @@ function _prod_check_devel($caller = 'internal') {
   $checks = array();
 
   $modules = array(
-    'DVL' = array(
+    'DVL' => array(
       'name' => 'devel',
       'title' => 'Devel',
       'path' => 'admin/settings/devel',
     ),
-    'DVG' = array(
+    'DVG' => array(
       'name' => 'devel_generate',
       'title' => 'Devel generate',
       'path' => 'admin/generate',
     ),
-    'DVN' = array(
+    'DVN' => array(
       'name' => 'devel_node_access',
       'title' => 'Devel node access',
       'path' => 'admin/settings/devel',
     ),
-    'DVT' = array(
+    'DVT' => array(
       'name' => 'devel_themer',
       'title' => 'Theme developer',
       'path' => 'admin/settings/devel_themer',
