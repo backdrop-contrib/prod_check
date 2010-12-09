@@ -112,6 +112,15 @@ Nagios
 4. Save the settings and you're good to go!
 
 
+Updates
+=======
+When new checks are added to the prod_check module, the prod_monitor module will
+automatically fetch them from the remote server when you edit the settings. Upon
+displaying the edit form, XMLRPC is ALWAYS used to build op the checkboxes array
+so that you always have the latest options available.
+Cron is NOT used to do this, since we want to keep the transfer to a minimum.
+
+
 Hidden link
 ===========
 Production check adds a 'hidden link' to the site where you can check the APC
