@@ -633,7 +633,7 @@ function _prod_check_release_notes($caller = 'internal') {
     '#value_ok'  => t('Release note .txt files have been removed.'),
     '#value_nok'  => t('Release note .txt files still present on your server!'),
     '#description_ok'  => t('Status is OK for production use.'),
-    '#description_nok' => t('Leaving the release note .txt files present on the webserver is a minor security risk. These files are usless on production anyway and simply should not be there!'),
+    '#description_nok' => t('Leaving the release note .txt files present on the webserver is a minor security risk. These files are useless on production anyway and simply should not be there!'),
     '#nagios_key' => 'REL',
     '#nagios_type' => 'state',
   );
