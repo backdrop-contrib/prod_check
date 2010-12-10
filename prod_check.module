@@ -16,7 +16,7 @@ define('PRODCHECK_EMAIL', '--- change this ---');
  * using the prod_monitor module.
  */
 $protocol = 'http://';
-if ($_SERVER['HTTPS']) {
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
   $protocol = 'https://';
 }
 define('PRODCHECK_BASEURL', $protocol.$_SERVER['SERVER_NAME'].'/');
@@ -617,7 +617,10 @@ function _prod_check_release_notes($caller = 'internal') {
 
   $error = FALSE;
   for ($i = 0; $i < count($files); $i++) {
-    if (file_exists(base_path().$files[$i])) {
+    // It would seem that $_SERVER['DOCUMENT_ROOT'] is not always set, hence the
+    // use of realpath() in combination with base path to determine the full
+    // path to the Drupal installation.
+    if (file_exists(realpath('.'.base_path()).'/'.$files[$i])) {
       $error = TRUE;
       break;
     }
@@ -626,11 +629,11 @@ function _prod_check_release_notes($caller = 'internal') {
   $check['prod_check_release_notes'] = array(
     '#title' => t($title),
     '#state' => !$error,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
     '#value_ok'  => t('Release note .txt files have been removed.'),
     '#value_nok'  => t('Release note .txt files still present on your server!'),
     '#description_ok'  => t('Status is OK for production use.'),
-    '#description_nok' => t('Leaving the release note .txt files present on the webserver is a security risk. A malicious user can easily determine what version of Drupal you are using by reading these files and quickly check if there are exploitable security issues and thus launch an attack on your site.'),
+    '#description_nok' => t('Leaving the release note .txt files present on the webserver is a minor security risk. These files are usless on production anyway and simply should not be there!'),
     '#nagios_key' => 'REL',
     '#nagios_type' => 'state',
   );
