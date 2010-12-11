@@ -374,6 +374,7 @@ function _prod_check_functions() {
     'functions' => array(
       'page_cache' => 'Page caching',
       'page_compression' => 'Page compression',
+      'boost' => 'Boost settings',
       'block_cache' => 'Block cache',
       'preprocess_css' => 'Optimize CSS files',
       'preprocess_js' => 'Optimize JavaScript files',
@@ -642,26 +643,40 @@ function _prod_check_release_notes($caller = 'internal') {
 }
 
 // --- PERFORMANCE ---
-//TODO: add/integrate boost checks!
 
 // Page cache
 function _prod_check_page_cache($caller = 'internal') {
   $check = array();
-
+  $error = FALSE;
+  
   $title = 'Page caching';
   $path = 'admin/settings/performance';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
+  if (variable_get('cache', 0) == 0) {
+    $error = TRUE;
+    // Maybe Boost is enabled?
+    if(variable_get('boost_enabled', 0) == 1) {
+      $error = FALSE;
+      $path .= '/boost';
+    }
+  }
+
   $check['prod_check_page_cache'] = array(
     '#title' => t($title),
-    '#state' => variable_get('cache', 0) != 0,
+    '#state' => !$error,
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title, $path),
-    '#description_nok' => t('Your !link settings are disabled. You should at least set page caching to Normal on production sites!', prod_check_link_array($title, $path)),
+    '#description_nok' => t('Your !link settings are disabled. You should at least set page caching to Normal on production sites! You should also consider using the !boost module!',
+      array(
+        '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>',
+        '!boost' => '<em>'.l(t('Boost'), 'http://drupal.org/project/boost', array('attributes' => array('title' => t('Boost')))).'</em>',
+      )
+    ),
     '#nagios_key' => 'PCACHE',
     '#nagios_type' => 'perf',
   );
@@ -678,6 +693,9 @@ function _prod_check_page_compression($caller = 'internal') {
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
+  if(variable_get('boost_enabled', 0) == 1) {
+    $path .= '/boost';
+  }
 
   $check['prod_check_page_compression'] = array(
     '#title' => t($title),
@@ -692,6 +710,88 @@ function _prod_check_page_compression($caller = 'internal') {
   );
 
   return prod_check_execute_check($check, $caller);
+}
+
+// Boost settings check
+function _prod_check_boost($caller = 'internal') {
+  if (module_exists('boost')) {
+    $check = array();
+
+    $path = 'admin/settings/performance/boost';
+    if ($caller != 'internal') {
+      $path = PRODCHECK_BASEURL . $path;
+    }
+
+    $title = 'Boost: ';
+
+    // Cache lifetime check
+    $subtitle = 'HTML max. cache lifetime';
+    $var = variable_get('boost_cache_lifetime', 3600);
+    $check['prod_check_boost_cache_lifetime'] = array(
+      '#title' => t($title.$subtitle),
+      '#state' => $var <= 3600,
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+      '#value_ok'  => t('Set to !seconds seconds.', array('!seconds' => $var)),
+      '#value_nok'  => t('Set too high?'),
+      '#description_ok'  => prod_check_ok_title($subtitle, $path),
+      '#description_nok' => t('Your !link settings might be set too high. Do consider that view blocks will remain unchanged for the amount of time you set here, even when new content is added! The default value of 1 hour is usually OK.', prod_check_link_array($subtitle, $path)),
+      '#nagios_key' => 'BCLFT',
+      '#nagios_type' => 'perf',
+    );
+
+    // Clear pages check
+    $subtitle = 'Clear expired pages on cron runs';
+    $var = variable_get('boost_expire_cron', TRUE);
+    $check['prod_check_boost_expire_cron'] = array(
+      '#title' => t($title.$subtitle),
+      '#state' => $var,
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+      '#value_ok'  => t('Enabled'),
+      '#value_nok'  => t('Disabled'),
+      '#description_ok'  => prod_check_ok_title($subtitle, $path),
+      '#description_nok' => t('!link is disabled! You should enable this to ensure that expired pages get flushed when the cron runs. This is imperative if you wish to keep view blocks up to date!', prod_check_link_array($subtitle, $path)),
+      '#nagios_key' => 'BCLPG',
+      '#nagios_type' => 'perf',
+    );
+
+    // Crawl on cron check
+    $subtitle = 'Crawl on cron';
+    $var = variable_get('boost_crawl_on_cron', FALSE);
+    $check['prod_check_boost_crawl_on_cron'] = array(
+      '#title' => t($title.$subtitle),
+      '#state' => $var,
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+      '#value_ok'  => t('Enabled'),
+      '#value_nok'  => t('Disabled'),
+      '#description_ok'  => prod_check_ok_title($subtitle, $path),
+      '#description_nok' => t('!link is disabled! You should enable this to ensure that the users are served cached pages all the time. The crawler caches pages before anyone can access them.', prod_check_link_array($subtitle, $path)),
+      '#nagios_key' => 'BCRCR',
+      '#nagios_type' => 'perf',
+    );
+
+    // Apache etag check
+    $subtitle = 'ETag';
+    $var = variable_get('boost_apache_etag', 0);
+    $check['prod_check_boost_apache_etag'] = array(
+      '#title' => t($title.$subtitle),
+      '#state' => $var >= 2,
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+      '#value_ok'  => t('Enabled'),
+      '#value_nok'  => t('Not properly configured.'),
+      '#description_ok'  => prod_check_ok_title($subtitle, $path),
+      '#description_nok' => t('Your !link settings are not ok! You should enable entity tags (!etag) in Boost so that user side caching and bandwith usage will be optimal! You do need to enable !mod for this to work.',
+        array(
+          '!link' => '<em>'.l(t($subtitle), $path, array('attributes' => array('title' => t($subtitle)))).'</em>',
+          '!etag' => '<em>'.l(t('ETags'), 'http://en.wikipedia.org/wiki/HTTP_ETag', array('attributes' => array('title' => t('Etags')))).'</em>',
+          '!mod' => '<em>'.l(t('mod_headers'), 'http://httpd.apache.org/docs/2.0/mod/mod_headers.html', array('attributes' => array('title' => t('mod_headers')))).'</em>',
+        )
+      ),
+      '#nagios_key' => 'BETAG',
+      '#nagios_type' => 'perf',
+    );
+
+    return prod_check_execute_check($check, $caller);
+  }
 }
 
 // Block cache
