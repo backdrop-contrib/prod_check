@@ -1,9 +1,6 @@
 <?php
 // $Id$
 
-// TODO: Cron: add a limit so we don't parse all sites in a single run...
-// Write help
-
 /**
  * Our own definition of the core requirements states. These can be found in
  * includes/install.inc and are only available in hook_install(). That's why
@@ -144,12 +141,36 @@ function prod_monitor_menu() {
  * Implementation of hook_cron()
  */
 function prod_monitor_cron() {
-  $sites = _prod_monitor_get_sites();
-  $data = array();
+  if (variable_get('prod_monitor_cron_running', FALSE)) {
+    watchdog('prod_monitor', 'Last cron run was not properly terminated!', array(), WATCHDOG_ERROR);
+  }
+
+  $sites = _prod_monitor_get_sites(variable_get('prod_monitor_cron_start_at', 0));
+
+  // Indicate we're running.
+  variable_set('prod_monitor_cron_running', TRUE);
+  $cron_start = time();
+  // 180 seconds run max!
+  $time_limit = 180;
+  $elapsed = $process = 0;
 
   foreach ($sites as $id => $site_info) {
-    _prod_monitor_retrieve_data($id, $site_info);
+    $elapsed = time() - $cron_start;
+    if ($elapsed < $time_limit) {
+      _prod_monitor_retrieve_data($id, $site_info);
+      $process++;
+    }
+    else {
+      // Time's up! Start with this site next time.
+      variable_set('prod_monitor_cron_start_at', $id);
+      break;
+    }
   }
+
+  watchdog('prod_monitor', '!count sites updated successfully in !time seconds.', array('!count' => $process, '!time' => $elapsed), WATCHDOG_NOTICE);
+
+  // Indicate we've stopped.
+  variable_del('prod_monitor_cron_running');
 }
 
 /**
@@ -223,10 +244,15 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
 }
 
 /**
- * Helper function to get all sites for theming them to a table leter on.
+ * Helper function to get all sites.
  */
-function _prod_monitor_get_sites() {
-  $sql = "SELECT * FROM {prod_monitor_sites}";
+function _prod_monitor_get_sites($start_id = FALSE) {
+  $where = 'ORDER BY added DESC';
+  if ($start_id) {
+    // When called from hook_cron
+    $where = "WHERE id >= $start_id ORDER BY id ASC";
+  }
+  $sql = "SELECT * FROM {prod_monitor_sites} $where";
   $result = db_query($sql);
 
   $sites = array();

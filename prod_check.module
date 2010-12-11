@@ -897,7 +897,7 @@ function _prod_check_search_config($caller = 'internal') {
 
 // --- SEO ---
 
-// TODO: mage generic function for all of these, only $title, $path & $key change!
+// TODO: make generic function for all of these, only $title, $path & $key change!
 
 // Google Analytics
 function _prod_check_googleanalytics($caller = 'internal') {
