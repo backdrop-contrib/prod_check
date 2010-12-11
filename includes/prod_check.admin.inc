@@ -82,6 +82,8 @@ function prod_check_settings_form(&$form_state) {
   if (!isset($form_state['values']['prod_check_enable_nagios'])) {
     $form_state['values']['prod_check_enable_nagios'] = variable_get('prod_check_enable_nagios', 0);
   }
+  // TODO: find a way to detect when this is rendered so we can adjust the
+  // prod-check.js and apply equalheights/width
   if ($form_state['values']['prod_check_enable_nagios']) {
     $form['prod_check']['nagios']['settings'] = _prod_check_functions_as_form();
     $options = variable_get('prod_check_nagios_checks', array());
@@ -161,6 +163,13 @@ function prod_check_ahah_helper() {
  * Validation for settings form.
  */
 function prod_check_settings_form_validate($form, &$form_state) {
+  // Had to add CSS again here since it was lost on form errors. Weird, doesn't
+  // seem logical...
+  $base = drupal_get_path('module', 'prod_check');
+  drupal_add_css($base.'/css/prod-check.css');
+  drupal_add_js($base.'/js/jquery.equalheights.js', 'module', 'header');
+  drupal_add_js($base.'/js/prod-check.js', 'module', 'header');
+
   if (!empty($form_state['ahah_submission'])) {
     return;
   }
