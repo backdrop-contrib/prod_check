@@ -79,8 +79,10 @@ function prod_check_settings_form(&$form_state) {
     '#suffix' => '</div>',
   );
   // Only show when the checkbox above is selected.
-  // TODO: the OR part here is not ok, when disabling the checkbox, the variable_get will still return 1
-  if ($form_state['values']['prod_check_enable_nagios'] == 1 || variable_get('prod_check_enable_nagios', 0)) {
+  if (!isset($form_state['values']['prod_check_enable_nagios'])) {
+    $form_state['values']['prod_check_enable_nagios'] = variable_get('prod_check_enable_nagios', 0);
+  }
+  if ($form_state['values']['prod_check_enable_nagios']) {
     $form['prod_check']['nagios']['settings'] = _prod_check_functions_as_form();
     $options = variable_get('prod_check_nagios_checks', array());
     if (!empty($options)) {
@@ -194,8 +196,13 @@ function prod_check_settings_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
     case t('Save configuration'):
       if ($form_state['values']['prod_check_enable_xmlrpc']) {
+        // Enable.
         variable_set('prod_check_enable_xmlrpc', $form_state['values']['prod_check_enable_xmlrpc']);
         variable_set('prod_check_xmlrpc_key', $form_state['values']['prod_check_xmlrpc_key']);
+      }
+      else {
+        // Disable.
+        variable_set('prod_check_enable_xmlrpc', 0);
       }
       if ($form_state['values']['prod_check_enable_nagios']) {
         $checks = array();
@@ -206,8 +213,13 @@ function prod_check_settings_form_submit($form, &$form_state) {
             }
           }
         }
+        // Enable.
         variable_set('prod_check_enable_nagios', $form_state['values']['prod_check_enable_nagios']);
         variable_set('prod_check_nagios_checks', $checks);
+      }
+      else {
+        // Disable.
+        variable_setd('prod_check_enable_nagios', 0);
       }
       break;
     case t('Reset to defaults'):
