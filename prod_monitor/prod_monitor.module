@@ -173,6 +173,11 @@ function prod_monitor_cron() {
     }
   }
 
+  // If all was processed, make sure we start from the top next time
+  if ($process >= count($sites)) {
+    variable_set('prod_monitor_cron_start_at', 0);
+  }
+
   watchdog('prod_monitor', '!count sites updated successfully in !time seconds.', array('!count' => $process, '!time' => $elapsed), WATCHDOG_NOTICE);
 
   // Indicate we've stopped.
