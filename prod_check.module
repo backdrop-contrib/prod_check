@@ -714,6 +714,7 @@ function _prod_check_page_compression($caller = 'internal') {
 
 // Boost settings check
 function _prod_check_boost($caller = 'internal') {
+  $result = array();
   if (module_exists('boost')) {
     $check = array();
 
@@ -789,9 +790,9 @@ function _prod_check_boost($caller = 'internal') {
       '#nagios_key' => 'BETAG',
       '#nagios_type' => 'perf',
     );
-
-    return prod_check_execute_check($check, $caller);
+    $result = prod_check_execute_check($check, $caller);
   }
+  return $result;
 }
 
 // Block cache
