@@ -228,7 +228,7 @@ function prod_check_settings_form_submit($form, &$form_state) {
       }
       else {
         // Disable.
-        variable_setd('prod_check_enable_nagios', 0);
+        variable_set('prod_check_enable_nagios', 0);
       }
       break;
     case t('Reset to defaults'):
