@@ -39,8 +39,6 @@ Dependencies
 ============
 
 - Nagios   http://drupal.org/project/nagios
-- Strongarm  http://drupal.org/project/strongarm
-- Drush      http://drupal.org/project/drush
 
 There are no true dependencies defined in the .info file, but naturally you need
 to install the Nagios module if you would like to integrate Production check
