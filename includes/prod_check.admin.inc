@@ -38,6 +38,47 @@ function prod_check_settings_form(&$form_state) {
 
   $form = array();
 
+  // E-mail settings.
+  $form['prod_check_sitemail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Sitemail check'),
+    '#default_value' => variable_get('prod_check_sitemail', ''),
+    '#size' => 60,
+    '#description' => t(
+      'Enter the (part of) the e-mail address you always use in the !link when developing a website.',
+      array(
+        '!link' => l(
+          t('site-information settings'),
+          'admin/settings/site-information',
+          array(
+            'attributes' => array('title' => t('site-information settings'))
+          )
+        )
+      )
+    ),
+    '#required' => FALSE,
+  );
+  $form['prod_check_apcpass'] = array(
+    '#type' => 'password_confirm',
+    '#title' => t('APC advanced features password'),
+    '#value' => array(variable_get('prod_check_apcpass', 'password')),
+    '#size' => 60,
+    '#description' => t(
+      'Enter the password you wish to use for the !link functionality.',
+      array(
+        '!link' => l(
+          t('advanced APC'),
+          'admin/reports/status/apc',
+          array(
+            'attributes' => array('title' => t('advanced APC'))
+          )
+        )
+      )
+    ),
+    '#required' => FALSE,
+  );
+
+
   // XMLRPC settings.
   $form['prod_check_enable_xmlrpc'] = array(
     '#type' => 'checkbox',
@@ -241,6 +282,7 @@ function prod_check_settings_form_submit($form, &$form_state) {
 }
 
 function prod_check_apc() {
+  define('ADMIN_PASSWORD',variable_get('prod_check_apcpass', 'password'));
   include(drupal_get_path('module', 'prod_check').'/includes/prod_check.apc.inc');
   exit;
 }
