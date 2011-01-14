@@ -5,6 +5,8 @@
  * Implementation of hook_uninstall().
  */
 function prod_check_uninstall() {
+  variable_del('prod_check_sitemail');
+  variable_del('prod_check_apcpass');
   variable_del('prod_check_enable_xmlrpc');
   variable_del('prod_check_xmlrpc_key');
   variable_del('prod_check_enable_nagios');

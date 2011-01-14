@@ -58,10 +58,11 @@ function prod_check_settings_form(&$form_state) {
     ),
     '#required' => FALSE,
   );
+
+  // APC password.
   $form['prod_check_apcpass'] = array(
     '#type' => 'password_confirm',
     '#title' => t('APC advanced features password'),
-    '#value' => array(variable_get('prod_check_apcpass', 'password')),
     '#size' => 60,
     '#description' => t(
       'Enter the password you wish to use for the !link functionality.',
@@ -204,17 +205,17 @@ function prod_check_ahah_helper() {
  * Validation for settings form.
  */
 function prod_check_settings_form_validate($form, &$form_state) {
+  if (!empty($form_state['ahah_submission'])) {
+    return;
+  }
+
   // Had to add CSS again here since it was lost on form errors. Weird, doesn't
   // seem logical...
   $base = drupal_get_path('module', 'prod_check');
   drupal_add_css($base.'/css/prod-check.css');
   drupal_add_js($base.'/js/jquery.equalheights.js', 'module', 'header');
   drupal_add_js($base.'/js/prod-check.js', 'module', 'header');
-
-  if (!empty($form_state['ahah_submission'])) {
-    return;
-  }
-
+dpm($form_state);
   if ($form_state['values']['prod_check_enable_xmlrpc']) {
     if (empty($form_state['values']['prod_check_xmlrpc_key'])) {
       form_set_error('prod_check_xmlrpc_key', t('When enabling the XPLRPC API, you <strong>must</strong> enter an API key!'));
@@ -245,6 +246,13 @@ function prod_check_settings_form_submit($form, &$form_state) {
   }
   switch ($form_state['values']['op']) {
     case t('Save configuration'):
+      variable_set('prod_check_sitemail', $form_state['values']['prod_check_sitemail']);
+      if (!empty($form_state['values']['prod_check_apcpass'])) {
+        variable_set('prod_check_apcpass', $form_state['values']['prod_check_apcpass']);
+      }
+      else {
+        variable_set('prod_check_apcpass', 'password');
+      }
       if ($form_state['values']['prod_check_enable_xmlrpc']) {
         // Enable.
         variable_set('prod_check_enable_xmlrpc', $form_state['values']['prod_check_enable_xmlrpc']);
@@ -273,6 +281,8 @@ function prod_check_settings_form_submit($form, &$form_state) {
       }
       break;
     case t('Reset to defaults'):
+      variable_del('prod_check_sitemail');
+      variable_del('prod_check_apcpass');
       variable_del('prod_check_enable_xmlrpc');
       variable_del('prod_check_xmlrpc_key');
       variable_del('prod_check_enable_nagios');

@@ -534,15 +534,14 @@ function _prod_check_site_mail($caller = 'internal') {
   }
 
   $site_mail = variable_get('site_mail', '');
-
   $check['prod_check_site_mail'] = array(
     '#title' => t($title),
-    '#state' => $site_mail != '' && !preg_match('/'.PRODCHECK_EMAIL.'/i', $site_mail),
+    '#state' => $site_mail != '' && !preg_match('/'.variable_get('prod_check_sitemail', '').'/i', $site_mail),
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
     '#value_ok'  => t('Global site e-mail address OK: %mail', array('%mail' => $site_mail)),
     '#value_nok'  => t('Global site e-mail address set to %mail', array('%mail' => $site_mail)),
     '#description_ok'  => prod_check_ok_title($title, $path),
-    '#description_nok' => t('The global e-mail address of the website should not be a Nascom address on production sites!'),
+    '#description_nok' => t('The global e-mail address of the website should not be a development address on production sites!'),
     '#nagios_key' => 'MAIL',
     '#nagios_type' => 'state',
   );
