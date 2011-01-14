@@ -657,7 +657,7 @@ function _prod_check_page_cache($caller = 'internal') {
   if (variable_get('cache', 0) == 0) {
     $error = TRUE;
     // Maybe Boost is enabled?
-    if(variable_get('boost_enabled', 0) == 1) {
+    if (variable_get('boost_enabled', 0) == 1) {
       $error = FALSE;
       $path .= '/boost';
     }
@@ -692,7 +692,7 @@ function _prod_check_page_compression($caller = 'internal') {
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
-  if(variable_get('boost_enabled', 0) == 1) {
+  if (variable_get('boost_enabled', 0) == 1) {
     $path .= '/boost';
   }
 

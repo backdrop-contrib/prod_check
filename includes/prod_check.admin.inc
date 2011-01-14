@@ -45,7 +45,7 @@ function prod_check_settings_form(&$form_state) {
     '#default_value' => variable_get('prod_check_sitemail', ''),
     '#size' => 60,
     '#description' => t(
-      'Enter the (part of) the e-mail address you always use in the !link when developing a website.',
+      'Enter (part of) the e-mail address you always use in the !link when developing a website. This is used in a regular expression in the "Site e-mail" check.',
       array(
         '!link' => l(
           t('site-information settings'),
@@ -59,6 +59,26 @@ function prod_check_settings_form(&$form_state) {
     '#required' => FALSE,
   );
 
+  // APC userd.
+  $form['prod_check_apcuser'] = array(
+    '#type' => 'textfield',
+    '#title' => t('APC advanced features username'),
+    '#default_value' => variable_get('prod_check_apcuser', 'apc'),
+    '#size' => 60,
+    '#description' => t(
+      'Enter the username you wish to use for the !link functionality.',
+      array(
+        '!link' => l(
+          t('advanced APC'),
+          'admin/reports/status/apc',
+          array(
+            'attributes' => array('title' => t('advanced APC'))
+          )
+        )
+      )
+    ),
+    '#required' => FALSE,
+  );
   // APC password.
   $form['prod_check_apcpass'] = array(
     '#type' => 'password_confirm',
@@ -215,7 +235,7 @@ function prod_check_settings_form_validate($form, &$form_state) {
   drupal_add_css($base.'/css/prod-check.css');
   drupal_add_js($base.'/js/jquery.equalheights.js', 'module', 'header');
   drupal_add_js($base.'/js/prod-check.js', 'module', 'header');
-dpm($form_state);
+
   if ($form_state['values']['prod_check_enable_xmlrpc']) {
     if (empty($form_state['values']['prod_check_xmlrpc_key'])) {
       form_set_error('prod_check_xmlrpc_key', t('When enabling the XPLRPC API, you <strong>must</strong> enter an API key!'));
@@ -244,9 +264,11 @@ function prod_check_settings_form_submit($form, &$form_state) {
   if (!empty($form_state['ahah_submission'])) {
     return;
   }
+
   switch ($form_state['values']['op']) {
     case t('Save configuration'):
       variable_set('prod_check_sitemail', $form_state['values']['prod_check_sitemail']);
+      variable_set('prod_check_apcuser', $form_state['values']['prod_check_apcuser']);
       if (!empty($form_state['values']['prod_check_apcpass'])) {
         variable_set('prod_check_apcpass', $form_state['values']['prod_check_apcpass']);
       }
@@ -262,6 +284,7 @@ function prod_check_settings_form_submit($form, &$form_state) {
         // Disable.
         variable_set('prod_check_enable_xmlrpc', 0);
       }
+      // This is why we didn't use a system_settings_form().
       if ($form_state['values']['prod_check_enable_nagios']) {
         $checks = array();
         foreach ($form_state['values']['monitor_settings'] as $set => $data) {
@@ -279,20 +302,20 @@ function prod_check_settings_form_submit($form, &$form_state) {
         // Disable.
         variable_set('prod_check_enable_nagios', 0);
       }
+      drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
-      variable_del('prod_check_sitemail');
-      variable_del('prod_check_apcpass');
-      variable_del('prod_check_enable_xmlrpc');
-      variable_del('prod_check_xmlrpc_key');
-      variable_del('prod_check_enable_nagios');
-      variable_del('prod_check_nagios_checks');
+      // This beats multiple variable_del() calls.
+      db_query('DELETE FROM {variable} WHERE name LIKE "prod_check_%"');
+      cache_clear_all('variables', 'cache');
+      drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }
 }
 
 function prod_check_apc() {
-  define('ADMIN_PASSWORD',variable_get('prod_check_apcpass', 'password'));
+  define('ADMIN_USERNAME', variable_get('prod_check_apcuser', 'apc'));
+  define('ADMIN_PASSWORD', variable_get('prod_check_apcpass', 'password'));
   include(drupal_get_path('module', 'prod_check').'/includes/prod_check.apc.inc');
   exit;
 }

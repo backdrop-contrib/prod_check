@@ -40,7 +40,7 @@ defaults('USE_AUTHENTICATION',1);			// Use (internal) authentication - best choi
 											// If set to 1:
 											//  You need to change ADMIN_PASSWORD to make
 											//  this work!
-defaults('ADMIN_USERNAME','apc'); 			// Admin Username
+//defaults('ADMIN_USERNAME','apc'); 			// Admin Username
 //defaults('ADMIN_PASSWORD','password');  	// Admin Password - CHANGE THIS TO ENABLE!!!
 
 // (beckerr) I'm using a clear text password here, because I've no good idea how to let 
@@ -133,13 +133,18 @@ if (empty($MYREQUEST['SORT2'])) $MYREQUEST['SORT2']="D";
 if (empty($MYREQUEST['OB']))	$MYREQUEST['OB']=OB_HOST_STATS;
 if (!isset($MYREQUEST['COUNT'])) $MYREQUEST['COUNT']=20;
 if (!isset($scope_list[$MYREQUEST['SCOPE']])) $MYREQUEST['SCOPE']='A';
-
+// added for prod_check support
+global $MY_SELF;
+// end prod_check
 $MY_SELF=
 	"$PHP_SELF".
 	"?SCOPE=".$MYREQUEST['SCOPE'].
 	"&SORT1=".$MYREQUEST['SORT1'].
 	"&SORT2=".$MYREQUEST['SORT2'].
 	"&COUNT=".$MYREQUEST['COUNT'];
+// added for prod_check support
+global $MY_SELF_WO_SORT;
+// end prod_check
 $MY_SELF_WO_SORT=
 	"$PHP_SELF".
 	"?SCOPE=".$MYREQUEST['SCOPE'].

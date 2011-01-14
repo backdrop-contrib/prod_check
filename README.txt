@@ -89,6 +89,17 @@ Nagios
  Nagios.
 4. Save the settings and you're good to go!
 
+Drush
+-----
+You can view the Production Check statuspage using Drush, simply by using this
+command:
+
+  $ drush prod-check
+
+A colour coded table will be printed. The information is limited to the name of
+the check and the status. In the Drupal version of the status page, you have an
+extra line explaining more about the curent status of a specific check.
+
 
 Updates
 =======
