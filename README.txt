@@ -51,37 +51,17 @@ Installation
 Production check
 ----------------
 1. Extract the prod_check module and place it in /sites/all/modules/contrib
+
 2. Remove the 'prod_monitor' folder and all it's contents
-3. Open the following files in a text editor:
 
-  prod_check/prod_check.module
-  prod_check/includes/prod_check.apc.inc
-
- Look on line 14 or in prod_check.module and change the part that reads
- '--- change this ---' to (part of) the e-mail address you always use in
- /admin/settings/site-information when developing a website.
- The reason why this was not added to the settings page is that this will allow
- you to upload the module to all your sites that need monitoring without needing
- to adjust this time and again.
- I'm still not sure about this highly unusual approach, so feel free to comment
- on it in the issue queue. Maybe the prod_check settings page is right after all.
-
- In prod_check.apc.inc, look on line 44 for the part that reads 'password' and
- change this to a secure password to be able to use the advanced features
- supplied by this page.
- This will NOT be added to any settings page in any way in order to comply with
- the licence note at the top of the file.
- Line 66 is the ONLY modification (and frankly in my humble opinion sort of a
- bugfix) to make the integration of this page possible for prod_check.
-
-4. Upload the prod_check folder to the websites you wish to check / monitor,
+3. Upload the prod_check folder to the websites you wish to check / monitor,
  enable the module and adjust it's settings using /admin/settings/prod-check.
 
-5. You can check the /admin/reports/status page to verify if the Production
+4. You can check the /admin/reports/status page to verify if the Production
  check setup described above was executed correctly and no errors / warnings are
  reported.
 
-6. You can find the result of the Production check module on
+5. You can find the result of the Production check module on
  /admin/reports/prod-check
 
 Production monitor
