@@ -67,6 +67,10 @@ function _drush_prod_monitor_overview() {
 
 function _drush_prod_monitor_detail($id) {
   $site = _prod_monitor_get_site($id, TRUE);
+  if (!isset($site['url'])) {
+    drush_print(dt('No site found with ID').' '.$id.'!');
+    return;
+  }
   $functions = $site['settings']['functions'];
   $nodata = dt('No data recieved yet.');
   $url = rtrim($site['url'], '/');
