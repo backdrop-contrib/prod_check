@@ -8,7 +8,7 @@ function prod_check_drush_command() {
   $items = array();
 
   $items['prod-check'] = array(
-    'callback' => 'prod_check_status',
+    'callback' => 'drush_prod_check_statuspage',
     'description' => "Display the Production Check status page",
   );
   
@@ -18,7 +18,7 @@ function prod_check_drush_command() {
 /**
  * Status page callback
  */
-function prod_check_status() {
+function drush_prod_check_statuspage() {
   $rows = array(array("\033[1m".dt('Production Check status')."\033[0m"));
   // Map error codes to shell colours.
   $severity = array (
