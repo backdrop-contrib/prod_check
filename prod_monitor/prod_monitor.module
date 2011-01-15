@@ -325,3 +325,27 @@ function _prod_monitor_get_site($id, $all = FALSE) {
 
   return $site;
 }
+
+/**
+ * Helper function to flush data for a site.
+ * Added for easy implementation of Drush functionality.
+ */
+function _prod_monitor_flush_data($id) {
+  $site = new stdClass();
+  $site->id = $id;
+  // Setting data to NULL would be preferred, but then drupal_write_record
+  // fails!
+  $site->data = serialize(array());
+  $site->lastupdate = 0;
+
+  return drupal_write_record('prod_monitor_sites', $site, array('id'));
+}
+
+/**
+ * Helper function to delete a site.
+ * Added for easy implementation of Drush functionality.
+ */
+function _prod_monitor_delete_data($id) {
+  $sql = "DELETE FROM {prod_monitor_sites} WHERE id = %d";
+  return db_query($sql, $id);
+}

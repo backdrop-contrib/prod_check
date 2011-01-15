@@ -356,18 +356,11 @@ function prod_monitor_flush_form(&$form_state, $id) {
 function prod_monitor_flush_form_submit($form, &$form_state) {
   $id = $form_state['values']['site_id'];
   $url = $form_state['values']['url'];
-  $site = new stdClass();
 
   if ($id) {
-    $site->id = $id;
-    // Setting data to NULL would be preferred, but then drupal_write_record
-    // fails!
-    $site->data = serialize(array());
-    $site->lastupdate = 0;
-    $result = drupal_write_record('prod_monitor_sites', $site, array('id'));
-
+    $result = _prod_monitor_flush_data($id);
     if ($result === FALSE) {
-      drupal_set_message(t('Unable to flush data for feature %url!', array('%url' => $url)), 'error');
+      drupal_set_message(t('Unable to flush data for %url!', array('%url' => $url)), 'error');
     }
     else {
       drupal_set_message(t('Stored data for %url successfully flushed.', array('%url' => $url)));
@@ -405,8 +398,7 @@ function prod_monitor_delete_form_submit($form, &$form_state) {
   $url = $form_state['values']['url'];
 
   if ($id) {
-    $sql = "DELETE FROM {prod_monitor_sites} WHERE id = %d";
-    $result = db_query($sql, $id);
+    $result = _prod_monitor_delete_data($id);
     if ($result) {
       drupal_set_message(t('Website %url successfully deleted.', array('%url' => $url)));
       drupal_goto('admin/reports/prod-monitor');

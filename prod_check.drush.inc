@@ -10,6 +10,7 @@ function prod_check_drush_command() {
   $items['prod-check'] = array(
     'callback' => 'drush_prod_check_statuspage',
     'description' => "Display the Production Check status page",
+    'aliases' => array('pchk'),
   );
   
   return $items;
@@ -19,7 +20,6 @@ function prod_check_drush_command() {
  * Status page callback
  */
 function drush_prod_check_statuspage() {
-  $rows = array(array("\033[1m".dt('Production Check status')."\033[0m"));
   // Map error codes to shell colours.
   $severity = array (
     REQUIREMENT_INFO => '1',
@@ -48,7 +48,8 @@ function drush_prod_check_statuspage() {
       }
     }
   }
-  drush_print_table($rows, TRUE);
+  drush_print("\033[1m".dt('Production Check status')."\033[0m", 1);
+  drush_print_table($rows);
   if ($error > 0) {
     // Would be cool if we could prefix the admin path with http://<host>/ so it
     // will become a clickable link in some terminals. Any deas?
