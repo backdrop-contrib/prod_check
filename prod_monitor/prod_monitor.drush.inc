@@ -21,16 +21,25 @@ function prod_monitor_drush_command() {
     'callback' => 'drush_prod_monitor_fetch',
     'description' => "Fetch the status information from a given remote site.",
     'aliases' => array('pmon-fe'),
+    'arguments' => array(
+      'id' => "Space delemited list of site IDs to fetch all data for.",
+    ),
   );
   $items['prod-monitor-flush'] = array(
     'callback' => 'drush_prod_monitor_flush',
     'description' => "Remove all fetched data for a given site.",
     'aliases' => array('pmon-fl'),
+    'arguments' => array(
+      'id' => "Space delemited list of site IDs to be flushed.",
+    ),
   );
   $items['prod-monitor-delete'] = array(
     'callback' => 'drush_prod_monitor_delsite',
     'description' => "Completemy remove a site and all its data.",
     'aliases' => array('pmon-rm'),
+    'arguments' => array(
+      'id' => "Space delemited list of site IDs to be deleted.",
+    ),
   );
 
   return $items;
@@ -104,23 +113,24 @@ function _drush_prod_monitor_overview() {
   );
 
   $rows = array(array(
-    dt('URL'),
     dt('ID'),
+    dt('URL'),
     dt('Data'),
-    dt('Status'),
     dt('Date added'),
     dt('Last update'),
+    dt('Status'),
   ));
   
   // TODO: check why the colour coding messes up the tabs for the table
+  // Worked around this by placing the status column last
   foreach ($sites as $id => $site_info) {
     $rows[] = array(
-      rtrim($site_info['url'], '/'),
       $id,
-      (!$site_info['data']) ? dt('Not yet retrieved') : t('Stored'),
-      "\033[".$severity[$site_info['status']].'m'.ucwords($site_info['status'])."\033[0m",
+      rtrim($site_info['url'], '/'),
+      (!$site_info['data']) ? dt('Empty') : t('Stored'),
       $site_info['added'],
       (!$site_info['lastupdate']) ? dt('Not yet updated') : $site_info['lastupdate'],
+      "\033[".$severity[$site_info['status']].'m'.ucwords($site_info['status'])."\033[0m",
     );
   }
   drush_print("\033[1m".dt('Production Monitor status')."\033[0m\n", 1);
