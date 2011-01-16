@@ -52,7 +52,7 @@ function drush_prod_check_statuspage() {
   drush_print_table($rows);
   if ($error > 0) {
     // Would be cool if we could prefix the admin path with http://<host>/ so it
-    // will become a clickable link in some terminals. Any deas?
+    // will become a clickable link in some terminals. Any ideas?
     drush_print("\033[1m".dt('Some errors were reported!')."\033[0m ".dt('Check the full status page on')." \033[1m".'admin/reports/prod-check'."\033[0m ".dt('for details.'));
   }
 }

@@ -28,7 +28,7 @@ function prod_monitor_status($id) {
   }
 
   if (empty($output)) {
-    $output = '<p>'.t('You have disabled all data checks!').'</p><p>&nbsp;</p>';
+    $output = '<p>'.$nodata.'</p><p>&nbsp;</p>';
   }
 
   $output .= drupal_get_form('_prod_monitor_update_data_form', $id, $site);
@@ -398,7 +398,7 @@ function prod_monitor_delete_form_submit($form, &$form_state) {
   $url = $form_state['values']['url'];
 
   if ($id) {
-    $result = _prod_monitor_delete_data($id);
+    $result = _prod_monitor_delete_site($id);
     if ($result) {
       drupal_set_message(t('Website %url successfully deleted.', array('%url' => $url)));
       drupal_goto('admin/reports/prod-monitor');

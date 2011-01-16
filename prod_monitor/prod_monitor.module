@@ -345,7 +345,15 @@ function _prod_monitor_flush_data($id) {
  * Helper function to delete a site.
  * Added for easy implementation of Drush functionality.
  */
-function _prod_monitor_delete_data($id) {
+function _prod_monitor_delete_site($id) {
   $sql = "DELETE FROM {prod_monitor_sites} WHERE id = %d";
   return db_query($sql, $id);
+}
+
+/**
+ * Helper function to delete a site.
+ * Added for easy implementation of Drush functionality.
+ */
+function _prod_monitor_get_url($id) {
+  return rtrim(db_result(db_query("SELECT url FROM {prod_monitor_sites} WHERE id = %d", $id)), '/');
 }

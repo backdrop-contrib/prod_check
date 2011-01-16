@@ -1,8 +1,6 @@
 <?php
 // $Id$
 
-//TODO: add fetch data function + query to get url of a site for better feedback
-
 /**
  * Implementation of hook_drush_command().
  */
@@ -47,7 +45,22 @@ function prod_monitor_drush_command() {
 
 function drush_prod_monitor_fetch() {
   $args = func_get_args();
-  //_prod_monitor_retrieve_data($id, $site_info, $msg = FALSE);
+  for ($i = 0; $i < count($args); $i++) {
+    $site = _prod_monitor_get_site($args[$i]);
+    if (!empty($site['url'])) {
+      $result = _prod_monitor_retrieve_data($args[$i], $site);
+      $site['url'] = rtrim($site['url'], '/');
+      if ($result === FALSE) {
+        drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to fetch data for').' '.$site['url'].'!');
+      }
+      else {
+        drush_print(dt('Sucessfully fetched data for').' '.$site['url'].'.');
+      }
+    }
+    else {
+      drush_print(dt('No site found with ID ').$args[$i].'!');
+    }
+  }
 }
 
 /**
@@ -56,15 +69,21 @@ function drush_prod_monitor_fetch() {
 function drush_prod_monitor_flush() {
   $args = func_get_args();
   for ($i = 0; $i < count($args); $i++) {
-    if (!drush_confirm(dt('Do you really want to flush all data?'))) {
-      drush_die('Aborting.');
-    }
-    $result = _prod_monitor_flush_data($args[$i]);
-    if ($result === FALSE) {
-      drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to flush data!'));
+    $url = _prod_monitor_get_url($args[$i]);
+    if (!empty($url)) {
+      if (!drush_confirm(dt('Do you really want to flush all data for').' '.$url.'?')) {
+        drush_die('Aborting.');
+      }
+      $result = _prod_monitor_flush_data($args[$i]);
+      if ($result === FALSE) {
+        drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to flush data!'));
+      }
+      else {
+        drush_print(dt('Stored data successfully flushed.'));
+      }
     }
     else {
-      drush_print(dt('Stored data successfully flushed.'));
+      drush_print(dt('No site found with ID ').$args[$i].'!');
     }
   }
 }
@@ -75,15 +94,21 @@ function drush_prod_monitor_flush() {
 function drush_prod_monitor_delsite() {
   $args = func_get_args();
   for ($i = 0; $i < count($args); $i++) {
-    if (!drush_confirm(dt("Do you really want to remove the site and all it's data?"))) {
-      drush_die('Aborting.');
-    }
-    $result = _prod_monitor_delete_data($args[$i]);
-    if ($result === FALSE) {
-      drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to delete site!'));
+    $url = _prod_monitor_get_url($args[$i]);
+    if (!empty($url)) {
+      if (!drush_confirm(dt("Do you really want to delete").' '.$url.' '.dt('and all its data?'))) {
+        drush_die('Aborting.');
+      }
+      $result = _prod_monitor_delete_site($args[$i]);
+      if ($result === FALSE) {
+        drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to delete') . $url .'!');
+      }
+      else {
+        drush_print(dt('Website successfully deleted.'));
+      }
     }
     else {
-      drush_print(dt('Website successfully deleted.'));
+      drush_print(dt('No site found with ID ').$args[$i].'!');
     }
   }
 }
@@ -155,30 +180,38 @@ function _drush_prod_monitor_detail($id) {
     REQUIREMENT_ERROR => '1;31',
   );
   $error = 0;
+  $rows = array();
 
   foreach ($functions as $set => $data) {
-    $rows[] = array('');
-    $rows[] = array("\033[1m".dt($data['title'])."\033[0m");
-    if (!empty($site['data'][$set])) {
-      foreach ($site['data'][$set] as $check => $result) {
-        $rows[] = array(
-          $result['title'],
-          "\033[".$severity[$result['severity']].'m'.strip_tags($result['value'])."\033[0m",
-        );
-        if ($error < $result['severity']) {
-          $error = $result['severity'];
+    if (isset($site['data'][$set])) {
+      $rows[] = array('');
+      $rows[] = array("\033[1m".dt($data['title'])."\033[0m");
+      if (!empty($site['data'][$set])) {
+        foreach ($site['data'][$set] as $check => $result) {
+          $rows[] = array(
+            $result['title'],
+            "\033[".$severity[$result['severity']].'m'.strip_tags($result['value'])."\033[0m",
+          );
+          if ($error < $result['severity']) {
+            $error = $result['severity'];
+          }
         }
       }
-    }
-    else {
-      $rows[] = array($nodata);
+      else {
+        $rows[] = array($nodata);
+      }
     }
   }
   drush_print("\033[1m".dt('Production Check status for').' '.$url."\033[0m", 1);
-  drush_print_table($rows);
+  if (!empty($rows)) {
+    drush_print_table($rows);
+  }
+  else {
+    drush_print($nodata, 1);
+  }
   if ($error > 0) {
     // Would be cool if we could prefix the admin path with http://<host>/ so it
-    // will become a clickable link in some terminals. Any deas?
+    // will become a clickable link in some terminals. Any ideas?
     drush_print("\033[1m".dt('Some errors were reported!')."\033[0m ".dt('Check the full status page on')." \033[1m".'admin/reports/prod-monitor/'.$id.'/view'."\033[0m ".dt('for details.'));
   }
 }
