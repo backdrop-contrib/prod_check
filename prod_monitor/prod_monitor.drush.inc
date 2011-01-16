@@ -157,23 +157,21 @@ function _drush_prod_monitor_detail($id) {
   $error = 0;
 
   foreach ($functions as $set => $data) {
-    if (isset($site['data'][$set])) {
-      $rows[] = array('');
-      $rows[] = array("\033[1m".dt($data['title'])."\033[0m");
-      if (!empty($site['data'][$set])) {
-        foreach ($site['data'][$set] as $check => $result) {
-          $rows[] = array(
-            $result['title'],
-            "\033[".$severity[$result['severity']].'m'.strip_tags($result['value'])."\033[0m",
-          );
-          if ($error < $result['severity']) {
-            $error = $result['severity'];
-          }
+    $rows[] = array('');
+    $rows[] = array("\033[1m".dt($data['title'])."\033[0m");
+    if (!empty($site['data'][$set])) {
+      foreach ($site['data'][$set] as $check => $result) {
+        $rows[] = array(
+          $result['title'],
+          "\033[".$severity[$result['severity']].'m'.strip_tags($result['value'])."\033[0m",
+        );
+        if ($error < $result['severity']) {
+          $error = $result['severity'];
         }
       }
-      else {
-        $rows[] = array($nodata);
-      }
+    }
+    else {
+      $rows[] = array($nodata);
     }
   }
   drush_print("\033[1m".dt('Production Check status for').' '.$url."\033[0m", 1);
