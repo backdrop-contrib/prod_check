@@ -1,12 +1,17 @@
 <?php
-// $Id$
+
+// $Id
 
 /**
  * Implementation of hook_uninstall().
  */
 function prod_check_uninstall() {
   // This beats multiple variable_del() calls.
-  db_query('DELETE FROM {variable} WHERE name LIKE "prod_check_%"');
+  db_delete('variable')
+      ->condition('name', 'prod_check_%')
+      ->execute();
+
+  //db_query('DELETE FROM {variable} WHERE name LIKE "prod_check_%"');
 }
 
 /**
@@ -14,33 +19,34 @@ function prod_check_uninstall() {
  */
 function prod_check_requirements($phase) {
   $requirements = array();
-  
+  $t = get_t();
+
   switch ($phase) {
     case 'runtime':
       if (PRODCHECK_EMAIL == '--- change this ---') {
         $requirements['prod_check_email'] = array(
-          'title' => t('Production check'),
-          'value' => t('PRODCHECK_EMAIL not properly configured.'),
+          'title' => $t('Production check'),
+          'value' => $t('PRODCHECK_EMAIL not properly configured.'),
           'severity' => REQUIREMENT_WARNING,
-          'description' => t('You have not changed the PRODCHECK_EMAIL constant in the <em>prod_check.module</em> file. The Site e-mail check will not function properly. Please read the README.txt file.'),
+          'description' => $t('You have not changed the PRODCHECK_EMAIL constant in the <em>prod_check.module</em> file. The Site e-mail check will not function properly. Please read the README.txt file.'),
         );
       }
       $apc_file = file_get_contents(drupal_get_path('module', 'prod_check').'/includes/prod_check.apc.inc');
       if (strpos($apc_file, 'defaults(\'ADMIN_PASSWORD\',\'password\');') !== FALSE) {
         $requirements['prod_check_apc'] = array(
-          'title' => t('Production check'),
-          'value' => t('APC password not configured.'),
+          'title' => $t('Production check'),
+          'value' => $t('APC password not configured.'),
           'severity' => REQUIREMENT_WARNING,
-          'description' => t('You have not changed the password for the APC status page. The page will function, but advanced options require that you set a password. Please read the README.txt file.'),
+          'description' => $t('You have not changed the password for the APC status page. The page will function, but advanced options require that you set a password. Please read the README.txt file.'),
         );
       }
       $nagios = variable_get('prod_check_enable_nagios', 0);
       if ($nagios && !module_exists('nagios')) {
         $requirements['prod_check_nagios'] = array(
-          'title' => t('Production check'),
-          'value' => t('Nagios module not installed/enabled.'),
+          'title' => $t('Production check'),
+          'value' => $t('Nagios module not installed/enabled.'),
           'severity' => REQUIREMENT_ERROR,
-          'description' => t('You have enabled <em>Nagios integration</em> but you have not installed or enabled the !link module! Please install the !link module if you wish to use this functionality.', prod_check_link_array('Nagios', 'http://drupal.org/project/nagios')),
+          'description' => $t('You have enabled <em>Nagios integration</em> but you have not installed or enabled the !link module! Please install the !link module if you wish to use this functionality.', prod_check_link_array('Nagios', 'http://drupal.org/project/nagios')),
         );
       }
       break;
@@ -48,4 +54,3 @@ function prod_check_requirements($phase) {
 
   return $requirements;
 }
-

@@ -21,17 +21,6 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
 }
 define('PRODCHECK_BASEURL', $protocol.$_SERVER['SERVER_NAME'].'/');
 
-/**
- * Our own definition of the core requirements states. These can be found in
- * includes/install.inc and are only available in hook_install(). That's why
- * we redefine them here (yes, it's double!). It's nicer than including the
- * install.inc file...
- * Let's see if this will pose problems...
- */
-define('REQUIREMENT_INFO', -1);
-define('REQUIREMENT_OK', 0);
-define('REQUIREMENT_WARNING', 1);
-define('REQUIREMENT_ERROR', 2);
 
 /**
  * Our own definition of the Nagios module's states. Don't see any other way to
@@ -554,6 +543,7 @@ function _prod_check_site_mail($caller = 'internal') {
 // APC check
 function _prod_check_apc($caller = 'internal') {
   $check = array();
+  $desc_ok = '';
 
   $title = 'APC';
   $path = 'admin/reports/status/apc';
