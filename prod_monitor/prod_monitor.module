@@ -47,7 +47,12 @@ function prod_monitor_help($path, $arg) {
  * Implementation of hook_perm()
  */
 function prod_monitor_perm() {
-  return array('access production monitor');
+  return array(
+    'access production monitor' => array(
+      'title' => t('Access production monitor'),
+      'description' => t('Gives the user access to the production monitor pages'),
+    ),
+  );
 }
 
 /**

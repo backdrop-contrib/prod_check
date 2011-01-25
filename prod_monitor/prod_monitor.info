@@ -3,4 +3,4 @@
 name = "Production monitor"
 description = "Monitors sites which make use of the Production check module"
 package = "Monitoring"
-core = "6.x"
+core = "7.x"

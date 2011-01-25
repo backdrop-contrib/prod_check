@@ -32,6 +32,18 @@ define('NAGIOS_STATUS_WARNING', 2);
 define('NAGIOS_STATUS_CRITICAL', 3);
 
 /**
+ * Our own definition of the core requirements states. These can be found in
+ * includes/install.inc and are only available in hook_install(). That's why
+ * we redefine them here (yes, it's double!). It's nicer than including the
+ * install.inc file...
+ * Let's see if this will pose problems...
+ */
+define('REQUIREMENT_INFO', -1);
+define('REQUIREMENT_OK', 0);
+define('REQUIREMENT_WARNING', 1);
+define('REQUIREMENT_ERROR', 2);
+
+/**
  * Implementation of hook_help().
  */
 function prod_check_help($path, $arg) {
@@ -59,8 +71,13 @@ function prod_check_help($path, $arg) {
 /**
  * Implementation of hook_perm()
  */
-function prod_check_perm() {
-  return array('access production check');
+function prod_check_permission() {
+  return array(
+    'access production check' => array(
+      'title' => t('Access production check'),
+      'description' => t('Gives the user access to the production check pages'),
+    ),
+  );
 }
 
 /**
@@ -451,26 +468,26 @@ function _prod_check_error_reporting($caller = 'internal') {
   $check = array();
 
   $title = 'Error reporting';
-  $setting1 = t('Write errors to the log and to the screen');
-  $setting2 = t('Write errors to the log');
-  $path = 'admin/settings/error-reporting';
+  $setting1 = t('Display errors and warnings');
+  $setting2 = t('Don\'t display error messages');
+  $path = 'admin/config/development/logging';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
   $check['prod_check_error_reporting'] = array(
     '#title' => t($title),
-    '#state' => variable_get('error_level', 1) != 1,
+    '#state' => variable_get('error_level', ERROR_REPORTING_DISPLAY_ALL),
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
     '#value_ok'  => $setting2,
     '#value_nok'  => $setting1,
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are set to %setting1, they should be set to %setting2 on a producion environment!',
-      array(
-        '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>',
-        '%setting1' => $setting1,
-        '%setting2' => $setting2,
-      )
+                            array(
+                              '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>',
+                              '%setting1' => $setting1,
+                              '%setting2' => $setting2,
+                            )
     ),
     '#nagios_key' => 'ERR',
     '#nagios_type' => 'state',

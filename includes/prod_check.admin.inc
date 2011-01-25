@@ -20,7 +20,7 @@ function prod_check_status() {
     }
     $output .= '<h2>'.t($data['title']).'</h2>'."\n";
     $output .= '<div class="description"><p><em>'.t($data['description']).'</em></p></div>'."\n";
-    $output .= theme('status_report', $result);
+    $output .= theme('status_report', array('requirements' => $result));
   }
 
   return $output;
