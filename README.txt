@@ -1,4 +1,3 @@
-$Id$
 
 README file for the Production check & Production monitor Drupal modules.
 

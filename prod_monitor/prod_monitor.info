@@ -1,4 +1,3 @@
-; $Id$
 
 name = "Production monitor"
 description = "Monitors sites which make use of the Production check module"

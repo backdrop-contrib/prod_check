@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Build status page.

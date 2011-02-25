@@ -1,4 +1,3 @@
-/* $Id$ */
 
 /* Prod monitor settings page styling */
 

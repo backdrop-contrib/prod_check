@@ -1,4 +1,3 @@
-; $Id$
 
 name = "Production check"
 description = "Check a site to see if it's properly setup for production use."
