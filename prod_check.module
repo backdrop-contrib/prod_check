@@ -696,6 +696,7 @@ function _prod_check_release_notes($caller = 'internal') {
     'COPYRIGHT.txt',
     'INSTALL.mysql.txt',
     'INSTALL.pgsql.txt',
+    'INSTALL.sqlite.txt',
     'INSTALL.txt',
     'LICENSE.txt',
     'MAINTAINERS.txt',
