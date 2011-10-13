@@ -61,8 +61,9 @@ function prod_check_help($path, $arg) {
  */
 function prod_check_permission() {
 
-  return array('access production check' => array(
-      'title' => t('access production check'),
+  return array(
+    'access production check' => array(
+      'title' => t("Access Production check's status page"),
       'description' => t('View the report on all checks performed by Production check.'),
     ),
   );
