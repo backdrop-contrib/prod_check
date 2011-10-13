@@ -250,7 +250,7 @@ function prod_monitor_cron() {
 function _prod_monitor_retrieve_functions($url, $api_key, $msg = TRUE) {
   $url = rtrim($url, '/') . '/xmlrpc.php';
 
-  $functions = xmlrpc($url, 'prod_check.get_settings', $api_key);
+  $functions = xmlrpc($url, array('prod_check.get_settings' => array($api_key)));
   if (!$functions) {
     drupal_set_message(
       t('Failed to retrieve settings form from !link, please verify the given URL and try again!',
@@ -275,7 +275,7 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
   $checks = $site_info['settings']['checks'];
 
   // Do requests.
-  $data = xmlrpc($url, 'prod_check.get_data', $api_key, $checks);
+  $data = xmlrpc($url, array('prod_check.get_data' => array($api_key, $checks)));
   if (!$data) {
     watchdog('prod_monitor', 'Could not retrieve settings data for %link', array('%link' => $site_info['url']), WATCHDOG_ERROR);
     if ($msg) {
@@ -360,17 +360,15 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
  * Helper function to get all sites.
  */
 function _prod_monitor_get_sites($start_id = FALSE) {
-
   if ($start_id) {
     // When called from hook_cron
-      $result = db_query("SELECT * FROM {prod_monitor_sites} WHERE id >= :start_id ORDER BY id ASC",  array(':start_id' => $start_id));
-  } else{
-      $result = db_query("SELECT * FROM {prod_monitor_sites} ORDER BY added DESC");
+    $result = db_query("SELECT * FROM {prod_monitor_sites} WHERE id >= :start_id ORDER BY id ASC",  array(':start_id' => $start_id));
+  }
+  else {
+    $result = db_query("SELECT * FROM {prod_monitor_sites} ORDER BY added DESC");
   }
 
   $sites = array();
-  
- /// while ($row = db_fetch_array($result)) {
   foreach ($result as $row) {
     
     $id = $row['id'];
