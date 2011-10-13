@@ -50,11 +50,11 @@ function prod_monitor_help($path, $arg) {
  */
 function prod_monitor_permission() {
   return array(
-		'access production monitor' => array(
-			'title' => t('Administer the Production Monitor module'),
-			'description' => t('Perform adiminister tasks for the Production Monitor module')
-		),
-	);
+    'access production monitor' => array(
+      'title' => t('Administer the Production Monitor module'),
+      'description' => t('Perform adiminister tasks for the Production Monitor module')
+    ),
+  );
 }
 
 /**
@@ -363,16 +363,16 @@ function _prod_monitor_get_sites($start_id = FALSE) {
 
   if ($start_id) {
     // When called from hook_cron
-		  $result = db_query("SELECT * FROM {prod_monitor_sites} WHERE id >= :start_id ORDER BY id ASC",  array(':start_id' => $start_id));
+      $result = db_query("SELECT * FROM {prod_monitor_sites} WHERE id >= :start_id ORDER BY id ASC",  array(':start_id' => $start_id));
   } else{
-		  $result = db_query("SELECT * FROM {prod_monitor_sites} ORDER BY added DESC");
-	}
+      $result = db_query("SELECT * FROM {prod_monitor_sites} ORDER BY added DESC");
+  }
 
   $sites = array();
-	
+  
  /// while ($row = db_fetch_array($result)) {
-	foreach ($result as $row) {
-		
+  foreach ($result as $row) {
+    
     $id = $row['id'];
     $row['data'] = unserialize($row['data']);
 
@@ -420,13 +420,8 @@ function _prod_monitor_get_sites($start_id = FALSE) {
  *  Boolean whether or not to return all fields or just the url and settings.
  */
 function _prod_monitor_get_site($id, $all = FALSE) {
-	dpm($id, 'id');
-	dpm($all, 'all');
-	
-	if (!$all) {
-		
+  if (!$all) {
     $site = db_query("SELECT url, settings FROM {prod_monitor_sites} WHERE id = !d", array('!d' => $id))->fetchAll();
-		
   }
   else {
     $site = db_query("SELECT * FROM {prod_monitor_sites} WHERE id = !d", array('!d' => $id))->fetchAll();
@@ -437,10 +432,8 @@ function _prod_monitor_get_site($id, $all = FALSE) {
     if ($all) {
       $site['data'] = unserialize($site['data']);
     }
-  } 
-	else {
-		dpm('empty', 'empty');
-	}
+  }
+
   return $site;
 }
 

@@ -322,7 +322,7 @@ function _drush_prod_monitor_updates() {
 
   // Refresh if user asked for it.
   if (drush_get_option('check')) {
-    _drush_prod_monitor_update_refresh($id, &$modules);
+    _drush_prod_monitor_update_refresh($id, $modules);
   }
 
   $last = $modules['lastupdate'];

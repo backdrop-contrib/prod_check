@@ -115,13 +115,3 @@ function prod_monitor_uninstall() {
 	variable_del('prod_monitor_cron_running');
   variable_del('prod_monitor_cron_start_at');
 }
-
-/**
- * Update 6101 - Add new table to store module data.
- */
-function prod_monitor_update_6101() {
-  $ret = array();
-  $schema = prod_monitor_schema();
-  db_create_table($ret, 'prod_monitor_site_modules', $schema['prod_monitor_site_modules']);
-
-}
