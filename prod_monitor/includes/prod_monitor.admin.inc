@@ -160,7 +160,7 @@ function prod_monitor_updates_check($id) {
 /**
  * Build settings form.
  */
-function prod_monitor_overview_form(&$form_state, $edit = FALSE) {
+function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
   drupal_set_title(t('Production monitor settings'));
   $base = drupal_get_path('module', 'prod_monitor');
   drupal_add_css($base.'/css/prod-monitor.css');

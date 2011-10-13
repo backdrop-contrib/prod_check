@@ -52,7 +52,7 @@ function prod_monitor_permission() {
   return array(
     'access production monitor' => array(
       'title' => t('Administer the Production Monitor module'),
-      'description' => t('Perform adiminister tasks for the Production Monitor module')
+      'description' => t('Perform adiminister tasks for the Production Monitor module'),
     ),
   );
 }
@@ -421,10 +421,10 @@ function _prod_monitor_get_sites($start_id = FALSE) {
  */
 function _prod_monitor_get_site($id, $all = FALSE) {
   if (!$all) {
-    $site = db_query("SELECT url, settings FROM {prod_monitor_sites} WHERE id = !d", array('!d' => $id))->fetchAll();
+    $site = db_query("SELECT url, settings FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAll();
   }
   else {
-    $site = db_query("SELECT * FROM {prod_monitor_sites} WHERE id = !d", array('!d' => $id))->fetchAll();
+    $site = db_query("SELECT * FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAll();
   } 
 
   if (!empty($site)) {
