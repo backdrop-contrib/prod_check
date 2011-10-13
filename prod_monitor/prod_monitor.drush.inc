@@ -372,7 +372,7 @@ function _drush_prod_monitor_update_refresh($id, &$modules) {
     if (!empty($result)) {
       drush_print();
       $modules['available'] = $result;
-      $modules['lastupdate'] = REQUEST_TIME();
+      $modules['lastupdate'] = time();
     }
     else {
       drush_set_error('prod_monitor', dt('Failed to refres update status information for') .' '. $url.'!');

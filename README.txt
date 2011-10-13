@@ -54,7 +54,7 @@ Production check
 2. Remove the 'prod_monitor' folder and all it's contents
 
 3. Upload the prod_check folder to the websites you wish to check / monitor,
- enable the module and adjust it's settings using /admin/settings/prod-check.
+ enable the module and adjust it's settings using /admin/config/system/prod-check.
 
 4. You can check the /admin/reports/status page to verify if the Production
  check setup described above was executed correctly and no errors / warnings are

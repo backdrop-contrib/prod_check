@@ -1,8 +1,15 @@
-name = Production check
-description = Check a site to see if it's properly setup for production use.
-package = Monitoring
-core = 7.x
-files[] = prod_check.drush.inc
+
+name = "Production check"
+description = "Check a site to see if it's properly setup for production use."
+package = "Monitoring"
+core = "7.x"
+files[] = css/prod-check.css
 files[] = includes/prod_check.admin.inc
+files[] = includes/prod_check.apc.inc
 files[] = includes/prod_check.theme.inc
 files[] = includes/prod_check.update.inc
+files[] = js/jquery.equalheights.js
+files[] = js/jquery.maskedinput.min.js
+files[] = js/prod-check.js
+files[] = prod_check.install
+files[] = prod_check.module

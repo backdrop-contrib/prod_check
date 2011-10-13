@@ -72,7 +72,7 @@ function _prod_monitor_update_refresh($id, $projects, $site_key) {
     watchdog('prod_monitor', 'Unable to fetch any information about available new releases and updates for %link.', array('%link' => _prod_monitor_get_url($id)), WATCHDOG_ERROR, l(t('view'), 'admin/reports/prod-monitor/'.$id.'/updates'));
   }
   // Whether this worked or not, we did just (try to) check for updates.
-  $modules->lastupdate = REQUEST_TIME;
+  $modules->lastupdate = time();
   $result = drupal_write_record('prod_monitor_site_modules', $modules, array('id'));
   if (!$result) {
     watchdog('prod_monitor', 'Could not update module data for %link', array('%link' => _prod_monitor_get_url($id)), WATCHDOG_ERROR);

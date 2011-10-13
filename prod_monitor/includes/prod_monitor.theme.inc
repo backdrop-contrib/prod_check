@@ -6,7 +6,7 @@
  * @ingroup themeable
  */
 function theme_prod_monitor_update_report($id, $last, $data) {
-  $output = '<div class="update checked">'. ($last ? t('Last checked: @time ago', array('@time' => format_interval(REQUEST_TIME() - $last))) : t('Last checked: never'));
+  $output = '<div class="update checked">'. ($last ? t('Last checked: @time ago', array('@time' => format_interval(time() - $last))) : t('Last checked: never'));
   $output .= ' <span class="check-manually">('. l(t('Check manually'), 'admin/reports/prod-monitor/'.$id.'/update-check') .')</span>';
   $output .= "</div>\n";
 

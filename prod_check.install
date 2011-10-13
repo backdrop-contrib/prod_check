@@ -1,12 +1,12 @@
 <?php
 
-///**
-/// * Implementation of hook_uninstall().
-// */
-//function prod_check_uninstall() {
-//  // This beats multiple variable_del() calls.
-//  db_query('DELETE FROM {variable} WHERE name LIKE "prod_check_%"');
-//}
+/**
+ * Implementation of hook_uninstall().
+ */
+function prod_check_uninstall() {
+  // This beats multiple variable_del() calls.
+  db_query('DELETE FROM {variable} WHERE name LIKE "prod_check_%"');
+}
 
 /**
  * Implementation of hook_requirements().

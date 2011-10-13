@@ -161,12 +161,10 @@ function prod_monitor_updates_check($id) {
  * Build settings form.
  */
 function prod_monitor_overview_form(&$form_state, $edit = FALSE) {
-	dpm($edit, 'edit_base');
-	
   drupal_set_title(t('Production monitor settings'));
   $base = drupal_get_path('module', 'prod_monitor');
   drupal_add_css($base.'/css/prod-monitor.css');
-  //drupal_add_js($base.'/js/jquery.equalheights.js', 'module', 'header');
+  drupal_add_js($base.'/js/jquery.equalheights.js', 'module', 'header');
   drupal_add_js($base.'/js/prod-monitor.js', 'module', 'header');
 
   $form = array();
@@ -195,7 +193,6 @@ function prod_monitor_overview_form(&$form_state, $edit = FALSE) {
     }
   }
   else {
-	dpm($edit, 'edit');
     // Edit site situation.
     $site = _prod_monitor_get_site($edit);
     $url = $site['url'];
@@ -267,8 +264,8 @@ function prod_monitor_overview_form(&$form_state, $edit = FALSE) {
         $rest = $i%2;
         $form['sites']['prod_check_settings']['monitor_settings'][$set] = array(
           '#type' => 'checkboxes',
-          '#title' => check_plain(t($data['title'])),
-          '#description' => check_plain(t($data['description'])),
+          '#title' => t($data['title']),
+          '#description' => t($data['description']),
           '#options' => $data['functions'],
           '#default_value' => array_keys($data['functions']),
           '#prefix' => '<div class="prod-check-settings '.(($rest) ? 'odd' : 'even').'">',
@@ -380,8 +377,6 @@ function _prod_monitor_overview_form_table($sites) {
   return theme('table', $headers, $rows);
 }
 
-
-
 /**
  * Validation function
  */
@@ -417,7 +412,7 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
       else {
         // Add situation, insert.
         $update = NULL;
-        $site->added = REQUEST_TIME();
+        $site->added = time();
       }
 
       $site->url = $form_state['values']['url'];
