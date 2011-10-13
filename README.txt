@@ -78,6 +78,12 @@ Production monitor
 6. If you wish to fetch the data immediately, check the appropriate box and save
  the settings. Good to go!
 
+Upgrading
+---------
+When upgrading Production monitor to a newer version, always run update.php to
+verify if there are database or other updates that need to be applied!
+When ignoring this step, you might get errors and/or strange behavior!
+
 Nagios
 ------
 1. Download and install the Nagios module from http://drupal.org/project/nagios
@@ -95,9 +101,67 @@ command:
 
   $ drush prod-check
 
+or its alias:
+
+  $ drush pchk
+
 A colour coded table will be printed. The information is limited to the name of
 the check and the status. In the Drupal version of the status page, you have an
 extra line explaining more about the curent status of a specific check.
+
+For Production monitor, these commands are available:
+
+  $ drush prod-monitor [id]
+  $ drush prod-monitor-fetch [id]
+  $ drush prod-monitor-flush [id]
+  $ drush prod-monitor-delete [id]
+  $ drush prod-monitor-updates [id] (--check)
+
+or their aliases:
+
+  $ drush pmon [id]
+  $ drush pmon-fe [id]
+  $ drush pmon-fl [id]
+  $ drush pmon-rm [id]
+  $ drush pmon-up [id] (--check)
+
+The id parameter is optional for the prod-monitor command. The best usage is to
+first get a list of sites:
+
+  $ drush pmon
+
+Now look up the id of a site, then use the other commands to act on that
+specific site by passing it the id:
+
+  $ drush pmon 3
+  $ drush pmon-fl 3
+
+You can pass multiple ID's by separating them with spaces:
+
+  $ drush pmon 3 6 19
+  $ drush pmon-fl 19 4 1
+
+The prod-monitor-updates command acts on one id only!
+
+APC
+---
+Production Check complains about APC not being installed or misconfigured. What
+is APC you wonder? Well, APC is an opcode caching mechanism that will pre-com-
+pile PHP files and keep them stored in memory. The full manual can be found
+here: http://php.net/manual/en/book.apc.php .
+For Drupal sites, it is important to tune APC in order to achieve maximum per-
+formance there. Drupal uses a massive amount of files and therefore you should
+assign a proper amount of RAM to APC. For a dedicated setup 64Mb should be
+sufficient, in shared setups, you should easily double that!
+To tune your setup, you can use the aforementioned hidden link provided by
+Production check. You can see the memory usage there, verify your settings and
+much more.
+To help you out even further, an APC config file can be found in
+docs/apc.ini.txt. You must obviousely rename this file and omit the .txt
+extension (drupal.org CVS did not seem to accept files with .ini extension?).
+
+Note: This 'hidden link' makes use of the APC supplied PHP code and is subject
+to the PHP license: http://www.php.net/license/3_01.txt .
 
 
 Updates

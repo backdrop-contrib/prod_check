@@ -1,14 +1,16 @@
 <?php
-
-/*
- * Modify the '--- change this ---' part below to (part of) the dev address you
- * always use when building sites. This way the e-mail check will function
- * properly for your environment.
- * This was not put in a settings form to allow for easy deployment on many
- * without having to adjust settings all the time. Strongarm seemed overkill.
- * Maybe I'll rethink this, not sure about it.
+/**
+ * Our own definition of the core requirements states. These can be found in
+ * includes/install.inc and are only available in hook_install(). That's why
+ * we redefine them here (yes, it's double!). It's nicer than including the
+ * install.inc file...
+ * Let's see if this will pose problems...
  */
-define('PRODCHECK_EMAIL', '--- change this ---');
+
+define('PROD_CHECK_REQUIREMENT_INFO', -1);
+define('PROD_CHECK_REQUIREMENT_OK', 0);
+define('PROD_CHECK_REQUIREMENT_WARNING', 1);
+define('PROD_CHECK_REQUIREMENT_ERROR', 2);
 
 /**
  * This one is for use with the XMLRPC API, so that you have proper links when
@@ -20,31 +22,10 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
 }
 define('PRODCHECK_BASEURL', $protocol.$_SERVER['SERVER_NAME'].'/');
 
-
-/**
- * Our own definition of the Nagios module's states. Don't see any other way to
- * do this. If you do, drop me a line in the issue queue.
- */
-define('NAGIOS_STATUS_OK', 0);
-define('NAGIOS_STATUS_UNKNOWN', 1);
-define('NAGIOS_STATUS_WARNING', 2);
-define('NAGIOS_STATUS_CRITICAL', 3);
-
-/**
- * Our own definition of the core requirements states. These can be found in
- * includes/install.inc and are only available in hook_install(). That's why
- * we redefine them here (yes, it's double!). It's nicer than including the
- * install.inc file...
- * Let's see if this will pose problems...
- */
-define('REQUIREMENT_INFO', -1);
-define('REQUIREMENT_OK', 0);
-define('REQUIREMENT_WARNING', 1);
-define('REQUIREMENT_ERROR', 2);
-
 /**
  * Implementation of hook_help().
  */
+
 function prod_check_help($path, $arg) {
   $output = '';
   switch ($path) {
@@ -57,8 +38,15 @@ function prod_check_help($path, $arg) {
       $output .= '<p>'.t('This is an overview of all checks performed by the <em>Production check</em> module and their status. You can click the links inside the report to jump to the module\'s settings page, or to go to the project page of a module, in case you need to download it for installation.').'</p>';
       break;
     case 'admin/settings/prod-check':
+      $output .= '<p><strong>'.t('Sitemail check').'</strong><br />';
+      $output .= t('The value entered here is used in a regular expression. Prod check will use it to see if the e-mail address you have entered in <em>Site information</em> is no longer a development e-mail address.').'</p>';
+      $output .= '<p><strong>'.t('Advanced APC settings').'</strong><br />';
+      $output .= t('Production check enables a <em>hidden</em> path where you can review your APC setup. This is absolutely unmissable if you want to properly setup APC and tune it specifically for your website.').'</p>';
       $output .= '<p><strong>'.t('Enable XMLRPC API').'</strong><br />';
       $output .= t('By ticking this box, you open up the module\'s XMLRPC functions so they can be called by the <strong>Production monitor</strong> module for remote monitoring of your site. When enabling XMLRPC, you <strong>must</strong> enter an <strong>API key</strong> to secure the transfer of data. It\'s limited to 128 characters. A mixture of alphanumeric and special characters will increase security.').'</p>';
+      $output .= '<p><strong>'.t('Report module list every <em>x</em> at time <em>y</em>').'</strong><br />';
+      $output .= t('Select on which day of the week and at what time <em>Production check</em> is allowed to pass the module list of the site it is on to <em>Production monitor</em>. Set this carefully, as the amount data being transfered is quite big!').'<br />';
+      $output .= t('Depending on when the cron is run on the <em>Production monitor</em> site, the module list will be reported on or maybe even several hours(!) after the time given here!').'</p>';
       $output .= '<p><strong>'.t('Enable Nagios integration').'</strong><br />';
       $output .= t('By ticking this box, you open up the module\'s Nagios hooks, so that it can interface with the !link module. You will obviously need to install this module next to <em>Production check</em> to enable this functionality.', prod_check_link_array('Nagios', 'http://drupal.org/project/nagios')).'<br />';
       $output .= t('When the checkbox is enabled, a new array of checkboxes will appear, allowing you to specify in detail what will be reported to !link.', prod_check_link_array('Nagios', 'http://drupal.org/project/nagios')).'</p>';
@@ -68,13 +56,13 @@ function prod_check_help($path, $arg) {
 }
 
 /**
- * Implementation of hook_perm()
+ * Implementation of hook_permission()
  */
 function prod_check_permission() {
-  return array(
-    'access production check' => array(
-      'title' => t('Access production check'),
-      'description' => t('Gives the user access to the production check pages'),
+
+  return array('access production check' => array(
+      'title' => t('access production check'),
+      'description' => t('Perform a production check for your site'),
     ),
   );
 }
@@ -86,8 +74,8 @@ function prod_check_menu() {
   $items = array();
 
   $items['admin/reports/prod-check'] = array(
-    'title' => t('Production check'),
-    'description' => t('View the Production check report page.'),
+    'title' => 'Production check',
+    'description' => 'View the Production check report page.',
     'page callback' => 'prod_check_status',
     'access callback' => 'user_access',
     'access arguments' => array('access production check'),
@@ -95,9 +83,9 @@ function prod_check_menu() {
     'file' => 'includes/prod_check.admin.inc',
   );
 
-  $items['admin/settings/prod-check'] = array(
-    'title' => t('Production check'),
-    'description' => t('Setup the Production check module.'),
+  $items['admin/config/system/prod-check'] = array(
+    'title' => 'Production check',
+    'description' => 'Setup the Production check module.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('prod_check_settings_form'),
     'access callback' => 'user_access',
@@ -105,8 +93,16 @@ function prod_check_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/prod_check.admin.inc',
   );
-  $items['admin/settings/prod-check/nagios'] = array(
-    'title' => t('Production check Nagios settings'),
+  $items['admin/config/system/prod-check/xmlrpc'] = array(
+    'title' => 'Production check Xmlrpc settings',
+    'page callback' => 'prod_check_enable_xmlrpc',
+    'access callback' => 'user_access',
+    'access arguments' => array('access production check'),
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/prod_check.admin.inc',
+  );
+  $items['admin/config/system/prod-check/nagios'] = array(
+    'title' => 'Production check Nagios settings',
     'page callback' => 'prod_check_enable_nagios',
     'access callback' => 'user_access',
     'access arguments' => array('access production check'),
@@ -114,17 +110,67 @@ function prod_check_menu() {
     'file' => 'includes/prod_check.admin.inc',
   );
 
-
   $items['admin/reports/status/apc'] = array(
-    'title' => t('APC'),
+    'title' => 'APC',
     'page callback' => 'prod_check_apc',
     'access callback' => 'user_access',
     'access arguments' => array('access production check'),
     'type' => MENU_CALLBACK,
     'file' => 'includes/prod_check.admin.inc',
   );
-
   return $items;
+
+}
+
+/**
+ * Implementation of hook_menu ()
+ */
+
+function prod_check_theme($existing, $type, $theme, $path) {
+  return array(
+    'prod_check_status_report' => array(
+      'variables' => array('requirements' => NULL),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_menu()
+ */
+
+function prod_check_menu_alter(&$items) {
+  if (variable_get('prod_check_enable_nagios', 0) && isset($items['nagios'])) {
+    // Change callback.
+    if (variable_get('prod_check_nagios_unique', 'default') != 'default') {
+      $items['nagios']['page callback'] = 'prod_check_nagios_status_page';
+    }
+    // Change the path.
+    $new_path = variable_get('prod_check_nagios_takeover', '');
+    if (!empty($new_path)) {
+      // Create custom Nagios path.
+      $items[$new_path] = $items['nagios'];
+      // Drop old Nagios path.
+      unset($items['nagios']);
+    }
+  }
+}
+
+/**
+ * Custom callback to override /nagios page.
+ */
+function prod_check_nagios_status_page() {
+  if ($_SERVER['HTTP_USER_AGENT'] != variable_get('nagios_ua', 'Nagios')) {
+    switch (variable_get('prod_check_nagios_unique', 'default')) {
+      case '404': drupal_not_found();
+        break;
+      case 'home': drupal_goto('<front>');
+        break;
+      default: nagios_status_page();
+    }
+  }
+  else {
+    nagios_status_page();
+  }
 }
 
 /**
@@ -253,6 +299,74 @@ function prod_check_nagios() {
         $status = array_merge($status, $func('nagios'));
       }
     }
+
+    // Not verbose? Then filter the output.
+    if (variable_get('prod_check_nagios_verbose', 0) == 0) {
+      $nagios = array(
+        'OK' => array(
+          'count' => 0,
+        ),
+        'Unknown' => array(
+          'count' => 0,
+          'items' => array(),
+        ),
+        'Warning' => array(
+          'count' => 0,
+          'items' => array(),
+        ),
+        'CRITICAL' => array(
+          'count' => 0,
+          'items' => array(),
+        ),
+      );
+      $highest = 0;
+      foreach ($status as $item => $check) {
+        switch ($check['status']) {
+          case NAGIOS_STATUS_OK:
+            $nagios['OK']['count']++;
+            break;
+          case NAGIOS_STATUS_UNKNOWN:
+            $nagios['Unknown']['count']++;
+            $nagios['Unknown']['items'][] = $item;
+            break;
+          case NAGIOS_STATUS_WARNING:
+            $nagios['Warning']['count']++;
+            $nagios['Warning']['items'][] = $item;
+            break;
+          case NAGIOS_STATUS_CRITICAL:
+            $nagios['CRITICAL']['count']++;
+            $nagios['CRITICAL']['items'][] = $item;
+            break;
+        }
+        if ($check['status'] > $highest) {
+          $highest = $check['status'];
+        }
+      }
+      // Build message.
+      $message = '[';
+      foreach ($nagios as $state => $value) {
+        // Ignore 0 values.
+        if (!$value['count']) {
+          continue;
+        }
+        $message .= '@'.strtolower($state).' '.$state;
+        if(isset($nagios[$state]['items'])) {
+          $message .= ': '.implode('|', $nagios[$state]['items']);
+        }
+        $message .= ', ';
+      }
+      // Remove last comma and space.
+      $message = rtrim($message, ', ');
+      $message .= ']';
+      // Reset status array.
+      $status = array();
+      $status['PRODCHK'] = array(
+        'status' => $highest,
+        'type' => 'state',
+        'text' => t($message, array('@ok' => $nagios['OK']['count'], '@unknown' => $nagios['Unknown']['count'], '@warning' => $nagios['Warning']['count'], '@critical' => $nagios['CRITICAL']['count'])),
+      );
+    }
+
     return $status;
   }
 }
@@ -270,12 +384,12 @@ function prod_check_nagios() {
  *                #description_ok: description to show when check will pass
  *                #description_nok: description to show when check will fail
  *
- * @return array result erray that can be themed with the 'status_report' theme.
+ * @return array result arrey that can be themed with the 'status_report' theme.
  */
-function prod_check_execute_check($checks, $caller) {
+function prod_check_execute_check($checks, $caller, $compatibility = 'all') {
   $result = array();
 
-  if (is_array($checks)) {
+  if (is_array($checks) && $compatibility == 'all') {
     foreach (element_children($checks) as $key) {
       if (!$checks[$key]['#state']) {
         // Check failed
@@ -293,7 +407,7 @@ function prod_check_execute_check($checks, $caller) {
             $result[$checks[$key]['#nagios_key']] = array(
               'status' => $checks[$key]['#severity'], 
               'type'   => $checks[$key]['#nagios_type'],
-              'text'   => $checks[$key]['#description_nok'],
+              'text'   => strip_tags($checks[$key]['#description_nok']),
             );
             break;
         }
@@ -306,7 +420,7 @@ function prod_check_execute_check($checks, $caller) {
             $result[$key] = array(
               'title' => $checks[$key]['#title'],
               'value' => $checks[$key]['#value_ok'],
-              'severity' => REQUIREMENT_OK,
+              'severity' => PROD_CHECK_REQUIREMENT_OK,
               'description' => $checks[$key]['#description_ok'],
             );
             break;
@@ -314,14 +428,17 @@ function prod_check_execute_check($checks, $caller) {
             $result[$checks[$key]['#nagios_key']]  = array(
               'status' => NAGIOS_STATUS_OK, 
               'type'   => $checks[$key]['#nagios_type'],
-              'text'   => $checks[$key]['#description_ok'],
+              'text'   => strip_tags($checks[$key]['#description_ok']),
             );
             break;
         }
       }
     }
   }
-
+  // Special stuff here, only compatible with prod_monitor!
+  else if (is_array($checks) && $compatibility == 'prod_mon') {
+    $result = $checks;
+  }
   return $result;
 }
 
@@ -335,8 +452,16 @@ function prod_check_ok_title($title, $path, $text = 'Your !link settings are OK 
 /**
  * Helper function to generate link array to pass to the t() function
  */
-function prod_check_link_array($title, $path) {
-  return array('!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>');
+function prod_check_link_array($title, $path, $fragment=NULL) {
+  $options = array(
+    'attributes' => array(
+      'title' => t($title),
+    ),
+  );
+  if ($fragment) {
+    $options['fragment'] = $fragment;
+  }
+  return array('!link' => '<em>'.l(t($title), $path, $options).'</em>');
 }
 
 // --- All check functions follow here ---
@@ -357,7 +482,7 @@ function _prod_check_functions() {
     'description' => 'Checks wether various settings are fit for a production environment.',
     'functions' => array(
       'error_reporting' =>  'Error reporting',
-      'user_register' => 'User registration',
+      /*'user_register' => 'User registration', */
       'site_mail' => 'Site e-mail',
     ),
   );
@@ -369,6 +494,7 @@ function _prod_check_functions() {
     'functions' => array(
       'apc' => 'APC',
       'release_notes' => 'Release notes',
+      'readme_files' => 'Readme files',
     ),
   );
 
@@ -383,6 +509,16 @@ function _prod_check_functions() {
       'block_cache' => 'Block cache',
       'preprocess_css' => 'Optimize CSS files',
       'preprocess_js' => 'Optimize JavaScript files',
+    ),
+  );
+
+  // Security
+  $functions['security'] = array(
+    'title' => 'Security',
+    'description' => 'Various security related checks.',
+    'functions' => array(
+      'user_pass' => 'User passwords',
+      'anonymous_rights' => 'Anonymous user rights',
     ),
   );
 
@@ -403,58 +539,25 @@ function _prod_check_functions() {
     'description' => 'Checks if basic SEO modules are enabled.',
     'functions' => array(
       'googleanalytics' => 'Google Analytics',
-      'nodewords' => 'Meta tags',
+      'metatag' => 'Metatag',
       'page_title' => 'Page titles',
       'pathauto' => 'Path auto',
-      'path_redirect' => 'Path redirect',
+      'redirect' => 'Redirect',
       'xmlsitemap' => 'XML sitemap',
     ),
   );
 
+  // Production monitor only!
+  $functions['prod_mon'] = array(
+    'title' => 'Production monitor',
+    'description' => 'Specific checks that only work with Production monitor!',
+    'functions' => array(
+      'module_list' => 'Check module updates',
+      'cron_last' => 'Report last cron run',
+    ),
+  );
+
   return $functions;
-}
-
-/**
- * Parse the functions array and return a form fieldset with different sets of
- * checkboxes so it can be inserted 'as is' in another form array for rendering.
- * This is primlarily still here for integration with Nagios. Though not in use
- * now since Nagios would create far too much needless variables in my personal
- * opinion. It's left in for easy future integration with the
- * hook_nagios_settings().
- */
-function _prod_check_functions_as_form() {
-  $form = array();
-
-  $form['prod_check_settings'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Configure what data you wish to monitor with <strong>Nagios</strong> for this site.'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-  );
-
-  $form['prod_check_settings']['monitor_settings'] = array(
-    '#type' => 'markup',
-    '#prefix' => '<div id="prod-check-settings">',
-    '#suffix' => '</div>',
-    '#tree' => TRUE,
-  );
-
-  $i = 1;
-  foreach (_prod_check_functions() as $set => $data) {
-    $rest = $i%2;
-    $form['prod_check_settings']['monitor_settings'][$set] = array(
-      '#type' => 'checkboxes',
-      '#title' => t($data['title']),
-      '#description' => t($data['description']),
-      '#options' => $data['functions'],
-      '#default_value' => array_keys($data['functions']),
-      '#prefix' => '<div class="prod-check-settings '.(($rest) ? 'odd' : 'even').'">',
-      '#suffix' => '</div>',
-    );
-    $i++;
-  }
-
-  return $form;
 }
 
 // --- SETTINGS ---
@@ -462,63 +565,72 @@ function _prod_check_functions_as_form() {
 // displaying the content! Maybe use a custom theme instead of
 // theme_status_report()...? Any ideas?
 
-// Error reporting check
+// Logging and errors check
 function _prod_check_error_reporting($caller = 'internal') {
   $check = array();
 
-  $title = 'Error reporting';
-  $setting1 = t('Display errors and warnings');
-  $setting2 = t('Don\'t display error messages');
+  $title = 'Logging and errors';
+  $setting[0] = t('None');
+  $setting[1] = t('Errors and warnings');
+  $setting[2] = t('All messages');
   $path = 'admin/config/development/logging';
+  $msg_nok = '';
+  if (variable_get('error_level', 1) == 1){
+    $msg_nok = $setting[1];
+  }
+  else {
+    $msg_nok = $setting[2];
+  }
+
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
   $check['prod_check_error_reporting'] = array(
     '#title' => t($title),
-    '#state' => variable_get('error_level', ERROR_REPORTING_DISPLAY_ALL),
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
-    '#value_ok'  => $setting2,
-    '#value_nok'  => $setting1,
+    '#state' => variable_get('error_level', 2) ==0,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
+    '#value_ok'  => $setting[0],
+    '#value_nok'  => $msg_nok,
     '#description_ok'  => prod_check_ok_title($title, $path),
-    '#description_nok' => t('Your !link settings are set to %setting1, they should be set to %setting2 on a producion environment!',
-                            array(
-                              '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>',
-                              '%setting1' => $setting1,
-                              '%setting2' => $setting2,
-                            )
+    '#description_nok' => t('Your !link settings are set to %setting2, they should be set to %setting1 on a producion environment!',
+      array(
+        '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>',
+        '%setting1' => $setting[0],
+        '%setting2' => $msg_nok,
+      )
     ),
     '#nagios_key' => 'ERR',
     '#nagios_type' => 'state',
   );
-
   return prod_check_execute_check($check, $caller);
 }
 
-// User register settings check
+// Account settings check
 function _prod_check_user_register($caller = 'internal') {
   $check = array();
 
-  $title = 'User registration';
-  $setting1 = t('Visitors can create accounts and no administrator approval is required');
-  $setting2 = t('Visitors can create accounts but administrator approval is required');
-  $path = 'admin/user/settings';
+  $title = 'Account settings';
+  $setting[0] = t('Administrators only');
+  $setting[1] = t('Visitors');
+  $setting[2] = t('Visitors, but administrator approval is required');
+  $path = 'admin/config/people/accounts';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
-
+  $current = variable_get('user_register', 1);
   $check['prod_check_user_register'] = array(
     '#title' => t($title),
-    '#state' => variable_get('user_register', 1) != 1,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
-    '#value_ok'  => $setting2,
-    '#value_nok'  => $setting1,
+    '#state' => $current != 1,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
+    '#value_ok'  => $setting[$current],
+    '#value_nok'  => $setting[1],
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are set to %setting1. Are you sure this is what you want and did not mean to use %setting2? With improperly setup access rights, this can be dangerous...',
       array(
         '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>',
-        '%setting1' => $setting1,
-        '%setting2' => $setting2,
+        '%setting1' => $setting[$current],
+        '%setting2' => $setting[2],
       )
     ),
     '#nagios_key' => 'USR',
@@ -532,8 +644,8 @@ function _prod_check_user_register($caller = 'internal') {
 function _prod_check_site_mail($caller = 'internal') {
   $check = array();
 
-  $title = 'Site e-mail';
-  $path = 'admin/settings/site-information';
+  $title = 'Site email address';
+  $path = 'admin/config/system/site-information';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
@@ -542,11 +654,11 @@ function _prod_check_site_mail($caller = 'internal') {
   $check['prod_check_site_mail'] = array(
     '#title' => t($title),
     '#state' => $site_mail != '' && !preg_match('/'.variable_get('prod_check_sitemail', '').'/i', $site_mail),
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
-    '#value_ok'  => t('Global site e-mail address OK: %mail', array('%mail' => $site_mail)),
-    '#value_nok'  => t('Global site e-mail address set to %mail', array('%mail' => $site_mail)),
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
+    '#value_ok'  => t('Global site email address OK: %mail', array('%mail' => $site_mail)),
+    '#value_nok'  => t('Global site email address set to %mail', array('%mail' => $site_mail)),
     '#description_ok'  => prod_check_ok_title($title, $path),
-    '#description_nok' => t('The global e-mail address of the website should not be a development address on production sites!'),
+    '#description_nok' => t('The !link address of the website should not be a development address on production sites!', prod_check_link_array($title, $path)),
     '#nagios_key' => 'MAIL',
     '#nagios_type' => 'state',
   );
@@ -559,8 +671,9 @@ function _prod_check_site_mail($caller = 'internal') {
 // APC check
 function _prod_check_apc($caller = 'internal') {
   $check = array();
-  $desc_ok = '';
 
+  $desc_ok = '';
+  $desc_nok = '';
   $title = 'APC';
   $path = 'admin/reports/status/apc';
   if ($caller != 'internal') {
@@ -568,18 +681,25 @@ function _prod_check_apc($caller = 'internal') {
   }
 
   if (!function_exists('apc_cache_info')) {
-	  $desc_nok = t('!link does not appear to be running.', prod_check_link_array($title, $path));
+    $desc_nok = t('!link does not appear to be running.', prod_check_link_array($title, $path));
     $val_nok = t('Disabled');
     $error = TRUE;
   }
   else if ($cache = @apc_cache_info('opcode')) {
+    $apc_expunge = variable_get('prod_check_apc_expunge', 0);
+    $detailed_info = ': '.t('hits').': '.$cache['num_hits'].', '.t('misses').': '.$cache['num_misses'].', '.t('cache full count').': '.$cache['expunges'].'.';
     if ($cache['num_misses'] >= $cache['num_hits']) {
-  	  $desc_nok = t('!link not properly configured, too many misses', prod_check_link_array($title, $path)) .': '.t('hits').': '.$cache['num_hits'].', '.t('misses').': '.$cache['num_misses'].'.';
+      $desc_nok = t('!link not properly configured, too many misses', prod_check_link_array($title, $path)) . $detailed_info;
       $val_nok = t('Not functioning properly.');
       $error = TRUE;
     }
-    else if ($cache['num_misses'] < $cache['num_hits']) {
-  	  $desc_ok = t('!link running fine', prod_check_link_array($title, $path)) .': '.t('hits').': '.$cache['num_hits'].', '.t('misses').': '.$cache['num_misses'].'.';
+    else if ($cache['expunges'] > $apc_expunge) {
+      $desc_nok = t('!link not properly configured, cache size too small', prod_check_link_array($title, $path)) . $detailed_info;
+      $val_nok = t('Not functioning properly.');
+      $error = TRUE;
+    }
+    else {
+      $desc_ok = t('!link running fine', prod_check_link_array($title, $path)) . $detailed_info;
       $val_ok = t('Enabled');
       $error = FALSE;
     }
@@ -593,13 +713,13 @@ function _prod_check_apc($caller = 'internal') {
   $check['prod_check_apc'] = array(
     '#title' => t($title),
     '#state' => !$error,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => $desc_ok,
     '#description_nok' => $desc_nok,
     '#nagios_key' => 'APC',
-    '#nagios_type' => 'perf',
+    '#nagios_type' => 'state',
   );
 
   return prod_check_execute_check($check, $caller);
@@ -619,27 +739,74 @@ function _prod_check_release_notes($caller = 'internal') {
     'LICENSE.txt',
     'MAINTAINERS.txt',
     'UPGRADE.txt',
+    'sites/example.sites.php',
   );
-
+  $remaining_files = array();
   $error = FALSE;
-  for ($i = 0; $i < count($files); $i++) {
+  foreach ($files as $file) {
     // It would seem that $_SERVER['DOCUMENT_ROOT'] is not always set, hence the
     // use of realpath() in combination with base path to determine the full
     // path to the Drupal installation.
-    if (file_exists(realpath('.'.base_path()).'/'.$files[$i])) {
+    if (file_exists(realpath('.'.base_path()).'/'.$file)) {
+      array_push($remaining_files, $file);
       $error = TRUE;
-      break;
     }
   }
+  $str_remaining_files = implode(', ', $remaining_files);
 
   $check['prod_check_release_notes'] = array(
     '#title' => t($title),
     '#state' => !$error,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => t('Release note .txt files have been removed.'),
     '#value_nok'  => t('Release note .txt files still present on your server!'),
     '#description_ok'  => t('Status is OK for production use.'),
-    '#description_nok' => t('Leaving the release note .txt files present on the webserver is a minor security risk. These files are useless on production anyway and simply should not be there!'),
+    '#description_nok' => t('Leaving the "!files" files present on the webserver is a minor security risk. These files are useless on production anyway and they simply should not be there.', array(
+      '!files' => $str_remaining_files
+      )
+    ),
+    '#nagios_key' => 'REL',
+    '#nagios_type' => 'state',
+  );
+
+  return prod_check_execute_check($check, $caller);
+}
+
+// .txt files present in root check
+function _prod_check_readme_files($caller = 'internal') {
+  $check = array();
+  $title = 'Readme files';
+
+  $files = array(
+    'README.txt',
+    'sites/all/README.txt',
+    'sites/all/themes/README.txt',
+    'sites/all/modules/README.txt',
+  );
+  $remaining_files = array();
+  $error = FALSE;
+  foreach ($files as $file) {
+    // It would seem that $_SERVER['DOCUMENT_ROOT'] is not always set, hence the
+    // use of realpath() in combination with base path to determine the full
+    // path to the Drupal installation.
+    if (file_exists(realpath('.'.base_path()).'/'.$file)) {
+      array_push($remaining_files, $file);
+      $error = TRUE;
+    }
+  }
+  $str_remaining_files = implode(', ', $remaining_files);
+
+  $check['prod_check_readme_files'] = array(
+    '#title' => t($title),
+    '#state' => !$error,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
+    '#value_ok'  => t('Release note .txt files have been removed.'),
+    '#value_nok'  => t('Release note .txt files still present on your server!'),
+    '#description_ok'  => t('Status is OK for production use.'),
+    '#description_nok' => t('Leaving the "!files" files present on the webserver is a minor security risk. These files are useless on production anyway and they simply should not be there.', array(
+      '!files' => $str_remaining_files
+      )
+    ),
     '#nagios_key' => 'REL',
     '#nagios_type' => 'state',
   );
@@ -653,9 +820,9 @@ function _prod_check_release_notes($caller = 'internal') {
 function _prod_check_page_cache($caller = 'internal') {
   $check = array();
   $error = FALSE;
-  
+
   $title = 'Page caching';
-  $path = 'admin/settings/performance';
+  $path = 'admin/config/development/performance';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
@@ -672,18 +839,18 @@ function _prod_check_page_cache($caller = 'internal') {
   $check['prod_check_page_cache'] = array(
     '#title' => t($title),
     '#state' => !$error,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title, $path),
-    '#description_nok' => t('Your !link settings are disabled. You should at least set page caching to Normal on production sites! You should also consider using the !boost module!',
+    '#description_nok' => t('Your !link settings are disabled. You should at least set page caching to "Cache pages for anonymous users" on a production site! You should also consider using the !boost module!',
       array(
         '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>',
         '!boost' => '<em>'.l(t('Boost'), 'http://drupal.org/project/boost', array('attributes' => array('title' => t('Boost')))).'</em>',
       )
     ),
     '#nagios_key' => 'PCACHE',
-    '#nagios_type' => 'perf',
+    '#nagios_type' => 'state',
   );
 
   return prod_check_execute_check($check, $caller);
@@ -692,26 +859,37 @@ function _prod_check_page_cache($caller = 'internal') {
 // Page compression
 function _prod_check_page_compression($caller = 'internal') {
   $check = array();
+  $status = TRUE;
 
   $title = 'Page compression';
-  $path = 'admin/settings/performance';
+  $path = 'admin/config/development/performance';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
+
+  // Adjust path if Boost is enabled.
   if (variable_get('boost_enabled', 0) == 1) {
     $path .= '/boost';
   }
 
+  if (variable_get('page_compression', 0) == 0) {
+    $status = FALSE;
+    // When using Varnish, turning off page compression is a good thing!
+    if (module_exists('varnish')) {
+      $status = TRUE;
+    }
+  }
+
   $check['prod_check_page_compression'] = array(
     '#title' => t($title),
-    '#state' => variable_get('page_compression', 0) != 0,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
+    '#state' => $status,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are disabled. You should enable page compression on production sites!', prod_check_link_array($title, $path)),
     '#nagios_key' => 'PCOMP',
-    '#nagios_type' => 'perf',
+    '#nagios_type' => 'state',
   );
 
   return prod_check_execute_check($check, $caller);
@@ -723,7 +901,7 @@ function _prod_check_boost($caller = 'internal') {
   if (module_exists('boost')) {
     $check = array();
 
-    $path = 'admin/settings/performance/boost';
+    $path = 'admin/config/system/boost';
     if ($caller != 'internal') {
       $path = PRODCHECK_BASEURL . $path;
     }
@@ -731,18 +909,18 @@ function _prod_check_boost($caller = 'internal') {
     $title = 'Boost: ';
 
     // Cache lifetime check
-    $subtitle = 'HTML max. cache lifetime';
+    $subtitle = 'HTML max. cache lifetime ';
     $var = variable_get('boost_cache_lifetime', 3600);
     $check['prod_check_boost_cache_lifetime'] = array(
       '#title' => t($title.$subtitle),
       '#state' => $var <= 3600,
-      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
       '#value_ok'  => t('Set to !seconds seconds.', array('!seconds' => $var)),
       '#value_nok'  => t('Set too high?'),
       '#description_ok'  => prod_check_ok_title($subtitle, $path),
       '#description_nok' => t('Your !link settings might be set too high. Do consider that view blocks will remain unchanged for the amount of time you set here, even when new content is added! The default value of 1 hour is usually OK.', prod_check_link_array($subtitle, $path)),
       '#nagios_key' => 'BCLFT',
-      '#nagios_type' => 'perf',
+      '#nagios_type' => 'state',
     );
 
     // Clear pages check
@@ -751,29 +929,34 @@ function _prod_check_boost($caller = 'internal') {
     $check['prod_check_boost_expire_cron'] = array(
       '#title' => t($title.$subtitle),
       '#state' => $var,
-      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
       '#value_ok'  => t('Enabled'),
       '#value_nok'  => t('Disabled'),
       '#description_ok'  => prod_check_ok_title($subtitle, $path),
       '#description_nok' => t('!link is disabled! You should enable this to ensure that expired pages get flushed when the cron runs. This is imperative if you wish to keep view blocks up to date!', prod_check_link_array($subtitle, $path)),
       '#nagios_key' => 'BCLPG',
-      '#nagios_type' => 'perf',
+      '#nagios_type' => 'state',
     );
 
+    /*
     // Crawl on cron check
-    $subtitle = 'Crawl on cron';
-    $var = variable_get('boost_crawl_on_cron', FALSE);
-    $check['prod_check_boost_crawl_on_cron'] = array(
-      '#title' => t($title.$subtitle),
-      '#state' => $var,
-      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
-      '#value_ok'  => t('Enabled'),
-      '#value_nok'  => t('Disabled'),
-      '#description_ok'  => prod_check_ok_title($subtitle, $path),
-      '#description_nok' => t('!link is disabled! You should enable this to ensure that the users are served cached pages all the time. The crawler caches pages before anyone can access them.', prod_check_link_array($subtitle, $path)),
-      '#nagios_key' => 'BCRCR',
-      '#nagios_type' => 'perf',
-    );
+
+    // The Boost module is in development atm, as soon as it is released we'll fix this.
+
+        $subtitle = 'Crawl on cron';
+        $var = variable_get('boost_crawl_on_cron', FALSE);
+        $check['prod_check_boost_crawl_on_cron'] = array(
+          '#title' => t($title.$subtitle),
+          '#state' => $var,
+          '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
+          '#value_ok'  => t('Enabled'),
+          '#value_nok'  => t('Disabled'),
+          '#description_ok'  => prod_check_ok_title($subtitle, $path),
+          '#description_nok' => t('!link is disabled! You should enable this to ensure that the users are served cached pages all the time. The crawler caches pages before anyone can access them.', prod_check_link_array($subtitle, $path)),
+          '#nagios_key' => 'BCRCR',
+          '#nagios_type' => 'state',
+        );
+     */
 
     // Apache etag check
     $subtitle = 'ETag';
@@ -781,7 +964,7 @@ function _prod_check_boost($caller = 'internal') {
     $check['prod_check_boost_apache_etag'] = array(
       '#title' => t($title.$subtitle),
       '#state' => $var >= 2,
-      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
       '#value_ok'  => t('Enabled'),
       '#value_nok'  => t('Not properly configured.'),
       '#description_ok'  => prod_check_ok_title($subtitle, $path),
@@ -793,7 +976,7 @@ function _prod_check_boost($caller = 'internal') {
         )
       ),
       '#nagios_key' => 'BETAG',
-      '#nagios_type' => 'perf',
+      '#nagios_type' => 'state',
     );
     $result = prod_check_execute_check($check, $caller);
   }
@@ -805,7 +988,7 @@ function _prod_check_block_cache($caller = 'internal') {
   $check = array();
 
   $title = 'Block cache';
-  $path = 'admin/settings/performance';
+  $path = 'admin/config/development/performance';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
@@ -813,13 +996,13 @@ function _prod_check_block_cache($caller = 'internal') {
   $check['prod_check_block_cache'] = array(
     '#title' => t($title),
     '#state' => variable_get('block_cache', 0) != 0,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are disabled. You should really enable this for production as it can cause huge performance increases, especially on high load websites!', prod_check_link_array($title, $path)),
     '#nagios_key' => 'BCACHE',
-    '#nagios_type' => 'perf',
+    '#nagios_type' => 'state',
   );
 
   return prod_check_execute_check($check, $caller);
@@ -828,23 +1011,30 @@ function _prod_check_block_cache($caller = 'internal') {
 // Optimize CSS files
 function _prod_check_preprocess_css($caller = 'internal') {
   $check = array();
+  $state = TRUE;
 
   $title = 'Optimize CSS files';
-  $path = 'admin/settings/performance';
+  $path = 'admin/config/development/performance';
+
+  // Check settings.
+  if (variable_get('preprocess_css', 0) == 0) {
+    $state = FALSE;
+  }
+
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
   $check['prod_check_preprocess_css'] = array(
     '#title' => t($title),
-    '#state' => variable_get('preprocess_css', 0) != 0,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
+    '#state' => $state,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are disabled, they should be enabled on a producion environment! This should not cause trouble if you steer clear of @import statements.', prod_check_link_array($title, $path)),
     '#nagios_key' => 'CCOMP',
-    '#nagios_type' => 'perf',
+    '#nagios_type' => 'state',
   );
 
   return prod_check_execute_check($check, $caller);
@@ -853,23 +1043,113 @@ function _prod_check_preprocess_css($caller = 'internal') {
 // Optimize JavaScript files
 function _prod_check_preprocess_js($caller = 'internal') {
   $check = array();
+  $state = TRUE;
 
   $title = 'Optimize JavaScript files';
-  $path = 'admin/settings/performance';
+  $path = 'admin/config/development/performance';
+
+  // Check settings.
+  if (variable_get('preprocess_js', 0) == 0) {
+    $state = FALSE;
+    // Check if Advanced CSS/JS Aggregation is being used
+    if (module_exists('advagg')) {
+      $title = 'Advanced JS Aggregation';
+      $path = 'admin/settings/advagg';
+      if (variable_get('advagg_enabled', 1) == 1) {
+        $state = TRUE;
+        // Check if the CSS compress submodule is used.
+        if (module_exists('advagg_js_compress')) {
+          $path .= '/js-compress';
+        }
+      }
+    }
+  }
+
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
   $check['prod_check_preprocess_js'] = array(
     '#title' => t($title),
-    '#state' => variable_get('preprocess_js', 0) != 0,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+    '#state' => $state,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are disabled, ideally they should be enabled on a producion environment but this requires testing first, since it can cause JavaScript errors in certain cases.', prod_check_link_array($title, $path)),
     '#nagios_key' => 'JCOMP',
-    '#nagios_type' => 'perf',
+    '#nagios_type' => 'state',
+  );
+
+  return prod_check_execute_check($check, $caller);
+}
+
+// --- Security ---
+
+// Users
+function _prod_check_user_pass($caller = 'internal') {
+  $check = array();
+  $secure = TRUE;
+  $list = '';
+
+  $title = 'User passwords';
+  $path = '';
+  if ($caller != 'internal') {
+    $path = PRODCHECK_BASEURL;
+  }
+
+  // Be sure to omit the anonymous user with id 0.
+  $result = db_query('SELECT uid, name FROM {users} WHERE uid <> 0 AND status = 1 AND MD5(name) = pass');
+  foreach ($result as $row) {
+      $list .= l($row['name'], $path.'user/'.$row['uid'].'/edit', array('attributes' => array('title' => t('Edit user').' '.$row['name']))).', ';
+  }
+  if (!empty($list)) {
+    $secure = FALSE;
+    // Remove last comma and space.
+    $list = rtrim($list, ', ');
+  }
+  $check['prod_check_user_pass'] = array(
+    '#title' => t($title),
+    '#state' => $secure,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
+    '#value_ok'  => t('Secure'),
+    '#value_nok'  => t('Security risk!'),
+    '#description_ok'  => t('No security risk found.'),
+    '#description_nok' => t('Some users have a password that is identical to their username! You should check the following users:' .' '.$list.'.'),
+    '#nagios_key' => 'USRBD',
+    '#nagios_type' => 'state',
+  );
+
+  return prod_check_execute_check($check, $caller);
+}
+
+// Anonymous
+function _prod_check_anonymous_rights($caller = 'internal') {
+  $check = array();
+  $secure = TRUE;
+
+  $title = 'Anonymous user rights';
+  $path = 'admin/people/permissions';
+  if ($caller != 'internal') {
+    $path = PRODCHECK_BASEURL . $path;
+  }
+
+  $perms = db_query('SELECT permission FROM {role_permission} WHERE rid = 1')->fetchCol();
+  $perms = implode(', ', $perms);
+
+  if (preg_match('/(access\sall|add|administer|change|clear|create|delete|edit|revert|save|send\smail|set\svariable|update|upload|PHP|devel)/i', $perms)) {
+    $secure = FALSE;
+  }
+  $check['prod_check_anonymous_rights'] = array(
+    '#title' => t($title),
+    '#state' => $secure,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
+    '#value_ok'  => t('Secure'),
+    '#value_nok'  => t('Security risk!'),
+    '#description_ok'  => t('No security risk found.'),
+    '#description_nok' => t('The anonymous user seems to have elevated privileges! Please check the !link.', prod_check_link_array('permissions page', $path)),
+    '#nagios_key' => 'ANON',
+    '#nagios_type' => 'state',
   );
 
   return prod_check_execute_check($check, $caller);
@@ -882,7 +1162,7 @@ function _prod_check_update_status($caller = 'internal') {
   $check = array();
 
   $title = 'Update status';
-  $path = 'admin/reports/updates';
+  $path = 'admin/reports/status';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
@@ -890,10 +1170,10 @@ function _prod_check_update_status($caller = 'internal') {
   $check['prod_check_update_status'] = array(
     '#title' => t($title),
     '#state' => !module_exists('update'),
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => t('Disabled'),
     '#value_nok'  => t('Enabled'),
-    '#description_ok'  => t('Your settings are OK for production use.'),
+    '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('You have enabled the !link module. It would be better to turn this off on production, contrary to what Drupal core claims, and keep it running on development. Updating and testing should happen on development before deploying to production anyway.', prod_check_link_array($title, $path)),
     '#nagios_key' => 'UPD',
     '#nagios_type' => 'state',
@@ -910,22 +1190,22 @@ function _prod_check_devel($caller = 'internal') {
     'DVL' => array(
       'name' => 'devel',
       'title' => 'Devel',
-      'path' => 'admin/settings/devel',
+      'path' => 'admin/modules',
     ),
     'DVG' => array(
       'name' => 'devel_generate',
       'title' => 'Devel generate',
-      'path' => 'admin/generate',
+      'path' => 'admin/modules',
     ),
     'DVN' => array(
       'name' => 'devel_node_access',
       'title' => 'Devel node access',
-      'path' => 'admin/settings/devel',
+      'path' => 'admin/modules',
     ),
     'DVT' => array(
       'name' => 'devel_themer',
       'title' => 'Theme developer',
-      'path' => 'admin/settings/devel_themer',
+      'path' => 'admin/modules',
     ),
   );
 
@@ -936,14 +1216,13 @@ function _prod_check_devel($caller = 'internal') {
     if ($caller != 'internal') {
       $path = PRODCHECK_BASEURL . $path;
     }
-
     $checks['prod_check_'.$data['name']] = array(
       '#title' => t($title),
       '#state' => !$data['error'],
-      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
-      '#value_ok'  => t('Disbled'),
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
+      '#value_ok'  => t('Disabled'),
       '#value_nok'  => t('Enabled'),
-      '#description_ok'  => t('Your settings are OK for production use.'),
+      '#description_ok'  => prod_check_ok_title($title, $path),
       '#description_nok' => t('You have enabled the !link module. This should not be running on a production environment!', prod_check_link_array($title, $path)),
       '#nagios_key' => $key,
       '#nagios_type' => 'state',
@@ -959,30 +1238,49 @@ function _prod_check_search_config($caller = 'internal') {
   $error = FALSE;
 
   $title = 'Search config';
-  $path = 'admin/settings/search';
+  $path = 'admin/people/permissions';
+  $fragment = 'module-search_config';
+  $str_anonymous_content = '';
+  $severity = '';
+  $value_nok = '';
+  $msg_nok = '';
+
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
   if (!module_exists('search_config')) {
     $error = TRUE;
-    $severity = ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING;
+    $severity = ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING;
     $value_nok = t('Disabled');
     $msg_nok = t('You have not enabled the !link module. Please double check if you need this module or not, to be able to hide certain content types from being searched by users.', prod_check_link_array($title, 'http://drupal.org/project/search_config'));
   }
   else {
-    $search_config = variable_get('search_config_disable_type', array());
-    $error = TRUE;
-    foreach ($search_config as $key => $value) {
-      if (is_string($value)) {
-        $error = FALSE;
-        break;
-      }
+
+    $check_anonymous_search_all = db_query("SELECT rid, permission, module 
+    FROM {role_permission} WHERE rid = 1 and module = 'search_config' and permission = 'search all content'")->fetchField();
+
+    $check_anonymous_content_types = db_query("SELECT permission, module 
+    FROM {role_permission} WHERE rid = 1 and module = 'search_config'")->fetchCol();
+
+    if($check_anonymous_search_all == 1) {
+      $error = TRUE;
+      $msg_nok = t('You have enabled the !link module, but anonymous users can search every content type!', prod_check_link_array($title, $path, $fragment));
+    } 
+    else {
+      $error = FALSE;
+      $str_anonymous_content = implode(', ', $check_anonymous_content_types);
+
+      $msg_ok = t('You have enabled the !link module, anonymous users can search for "!content_types" -content type(s)!', array(
+        '!link' => implode(prod_check_link_array($title, $path, $fragment)),
+        '!content_types' => $str_anonymous_content,
+      ));
     }
+
     if ($error) {
-      $severity = ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR;
+      $severity = ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR;
       $value_nok = t('Not properly configured.');
-      $msg_nok = t('You have enabled the !link module, but no content types are excluded from being searched!', prod_check_link_array($title, $path));
+      $msg_nok = t('You have enabled the !link module, but no content types are excluded from being searched!', prod_check_link_array($title, $path, $fragment));
     }
   }
 
@@ -992,7 +1290,7 @@ function _prod_check_search_config($caller = 'internal') {
     '#severity' => $severity,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => $value_nok,
-    '#description_ok'  => prod_check_ok_title($title, $path),
+    '#description_ok'  => $msg_ok,
     '#description_nok' => $msg_nok,
     '#nagios_key' => 'SRCH',
     '#nagios_type' => 'state',
@@ -1010,25 +1308,28 @@ function _prod_check_googleanalytics($caller = 'internal') {
   $check = array();
   $error = FALSE;
   $ga_account = variable_get('googleanalytics_account', 'UA-');
+  $severity = '';
+  $value_nok = '';
+  $msg_nok = '';
 
   $title_ok = 'settings';
   $text_ok = 'Check the !link to verify if they are as you expect.';
 
   $title = 'Google Analytics';
-  $path = 'admin/settings/googleanalytics';
+  $path = 'admin/config/system/googleanalytics';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
   if (!module_exists('googleanalytics')) {
     $error = TRUE;
-    $severity = ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING;
+    $severity = ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING;
     $value_nok = t('Disabled');
     $msg_nok = t('You have not enabled the !link module. If you wish to track and optimise your site !link is absolutely necessary.', prod_check_link_array($title, 'http://drupal.org/project/google_analytics'));
   }
   else if (empty($ga_account) || $ga_account == 'UA-') {
     $error = TRUE;
-    $severity = ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR;
+    $severity = ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR;
     $value_nok = t('Not properly configured.');
     $msg_nok = t('You did not !link! Tracking will not be functional!', prod_check_link_array('enter a Google Analytics account', $path));
   }
@@ -1048,26 +1349,26 @@ function _prod_check_googleanalytics($caller = 'internal') {
   return prod_check_execute_check($check, $caller);
 }
 
-// Meta tags (nodewords)
-function _prod_check_nodewords($caller = 'internal') {
+// Meta tags
+function _prod_check_metatag($caller = 'internal') {
   $check = array();
   $title_ok = 'settings';
   $text_ok = 'Check the !link to verify if they are as you expect.';
 
-  $title = 'Meta tags';
-  $path = 'admin/content/nodewords';
+  $title = 'Metatag';
+  $path = 'admin/config/search/metatags';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  $check['prod_check_nodewords'] = array(
+  $check['prod_check_metatag'] = array(
     '#title' => t($title),
-    '#state' => module_exists('nodewords'),
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+    '#state' => module_exists('metatag'),
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title_ok, $path, $text_ok),
-    '#description_nok' => t('You have not enabled the !link module. If you care about ranking your site in search engines, this module is an absolute must.', prod_check_link_array($title, 'http://drupal.org/project/nodewords')),
+    '#description_nok' => t('You have not enabled the !link module. If you care about ranking your site in search engines, this module is an absolute must.', prod_check_link_array($title, 'http://drupal.org/project/metatag')),
     '#nagios_key' => 'META',
     '#nagios_type' => 'state',
   );
@@ -1079,12 +1380,14 @@ function _prod_check_page_title($caller = 'internal') {
   $check = array();
   $error = FALSE;
   $pager = variable_get('page_title_pager_pattern', '');
+  $value_nok = '';
+  $msg_nok = '';
 
   $title_ok = 'settings';
   $text_ok = 'Check the !link to verify if they are as you expect.';
 
   $title = 'Page titles';
-  $path = 'admin/content/page_title';
+  $path = 'admin/config/search/page-title';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
@@ -1096,13 +1399,13 @@ function _prod_check_page_title($caller = 'internal') {
   else if (empty($pager)) {
     $error = TRUE;
     $value_nok = t('Not properly configured.');
-    $msg_nok = t('You have not !link You shoul dreally do this if you want proper Google Indexing.', prod_check_link_array('set a pager pattern', $path));
+    $msg_nok = t('You have not !link You should really do this if you want proper Google Indexing.', prod_check_link_array('set a pager suffix', $path));
   }
 
   $check['prod_check_page_title'] = array(
     '#title' => t($title),
     '#state' => !$error,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => $value_nok,
     '#description_ok'  => prod_check_ok_title($title_ok, $path, $text_ok),
@@ -1129,7 +1432,7 @@ function _prod_check_pathauto($caller = 'internal') {
   $check['prod_check_pathauto'] = array(
     '#title' => t($title),
     '#state' => module_exists('pathauto'),
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title_ok, $path, $text_ok),
@@ -1141,26 +1444,26 @@ function _prod_check_pathauto($caller = 'internal') {
   return prod_check_execute_check($check, $caller);
 }
 
-// Path redirect
-function _prod_check_path_redirect($caller = 'internal') {
+// Redirect
+function _prod_check_redirect($caller = 'internal') {
   $check = array();
   $title_ok = 'settings';
   $text_ok = 'Check the !link to verify if they are as you expect.';
 
-  $title = 'Path redirect';
-  $path = 'admin/build/path-redirect';
+  $title = 'Redirect';
+  $path = 'admin/config/search/redirect';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  $check['prod_check_path_redirect'] = array(
+  $check['prod_check_redirect'] = array(
     '#title' => t($title),
-    '#state' => module_exists('path_redirect'),
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+    '#state' => module_exists('redirect'),
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title_ok, $path, $text_ok),
-    '#description_nok' => t('You have not enabled the !link module. This module ensures, when properly configured, that when paths for content are changhed, the old paths are given a 301 redirect to the new paths.', prod_check_link_array($title, 'http://drupal.org/project/path_redirect')),
+    '#description_nok' => t('You have not enabled the !link module. This module ensures, when properly configured, that when paths for content are changhed, the old paths are given a 301 redirect to the new paths.', prod_check_link_array($title, 'http://drupal.org/project/redirect')),
     '#nagios_key' => 'REDIR',
     '#nagios_type' => 'state',
   );
@@ -1175,15 +1478,15 @@ function _prod_check_xmlsitemap($caller = 'internal') {
   $text_ok = 'Check the !link to verify if they are as you expect.';
 
   $title = 'XML sitemap';
-  $path = 'admin/settings/xmlsitemap';
+  $path = 'admin/config/search/xmlsitemap';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  $check['prod_check_xmlsitemap'] = array(
+  $check['prod_check_sitemap'] = array(
     '#title' => t($title),
     '#state' => module_exists('xmlsitemap'),
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title_ok, $path, $text_ok),
@@ -1193,4 +1496,107 @@ function _prod_check_xmlsitemap($caller = 'internal') {
   );
 
   return prod_check_execute_check($check, $caller);
+}
+
+// --- Production monitor only! ---
+
+// Module list
+function _prod_check_module_list($caller = 'internal') {
+  $check = array();
+  $now = REQUEST_TIME();
+  $last = variable_get('prod_check_module_list_lastrun', 0);
+
+  // The if() is split up this way for full perfomance: we only run once a week,
+  // so on 6 out of 7 days, we won't pass the first if statement.
+
+  // First check if we are scheduled to run this day of the week.
+  if (variable_get('prod_check_module_list_day', 0) == date('w', $now)){
+    // First check if we already ran today.
+    if (date('Ymd', $last) != date('Ymd', $now)) {
+      $time = explode(':', variable_get('prod_check_module_list_time', '03:00'));
+      // Only run if we are spot on, or past the scheduled point. This CAN cause
+      // a run hours after the scheduled time, all depending on the cron setup
+      // on the prod_monitor site!
+      if (date('H', $now) >= $time[0] && date('i', $now) >= $time[1]) {
+
+        module_load_include('inc', 'prod_check', 'includes/prod_check.update');
+        // PANIC! We don't cache this! Should we!? The core update module does
+        // (for one hour) but this function here ONLY gets called ONCE a week at
+        // a very specific given time. Feel free to comment.
+        $projects = array();
+        _prod_check_process_info_list($projects, system_get_module_data(), 'module');
+        _prod_check_process_info_list($projects, system_get_theme_data(), 'theme');
+        // Allow other modules to alter projects before fetching and comparing.
+        drupal_alter('update_projects', $projects);
+        $check['prod_check_module_list']['projects'] = $projects;
+        $check['prod_check_module_list']['site_key'] = md5($base_url . drupal_get_private_key());
+        $check['prod_check_module_list']['last_update'] = $now;
+
+        // Remember when we ran last.
+        variable_set('prod_check_module_list_lastrun', $now);
+      }
+    }
+  }
+
+  return prod_check_execute_check($check, $caller, 'prod_mon');
+}
+
+// Module list
+function _prod_check_cron_last($caller = 'internal') {
+  $check = array();
+  $check['prod_check_cron_last'] = variable_get('cron_last', 0);
+  return prod_check_execute_check($check, $caller, 'prod_mon');
+}
+
+
+
+/**
+ * Returns HTML for the status report.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - requirements: An array of requirements.
+ *
+ * @ingroup themeable
+ */
+function theme_prod_check_status_report($variables) {
+  $requirements = $variables['requirements'];
+  $severities = array(
+    PROD_CHECK_REQUIREMENT_INFO => array(
+      'title' => t('Info'),
+      'class' => 'info',
+    ),
+    PROD_CHECK_REQUIREMENT_OK => array(
+      'title' => t('OK'),
+      'class' => 'ok',
+    ),
+    PROD_CHECK_REQUIREMENT_WARNING => array(
+      'title' => t('Warning'),
+      'class' => 'warning',
+    ),
+    PROD_CHECK_REQUIREMENT_ERROR => array(
+      'title' => t('Error'),
+      'class' => 'error',
+    ),
+  );
+  $output = '<table class="system-status-report">';
+
+  foreach ($requirements as $requirement) {
+    if (empty($requirement['#type'])) {
+      $severity = $severities[isset($requirement['severity']) ? (int) $requirement['severity'] : 0];
+      $severity['icon'] = '<div title="' . $severity['title'] . '"><span class="element-invisible">' . $severity['title'] . '</span></div>';
+
+      // Output table row(s)
+      if (!empty($requirement['description'])) {
+        $output .= '<tr class="' . $severity['class'] . ' merge-down"><td class="status-icon">' . $severity['icon'] . '</td><td class="status-title">' . $requirement['title'] . '</td><td class="status-value">' . $requirement['value'] . '</td></tr>';
+        $output .= '<tr class="' . $severity['class'] . ' merge-up"><td colspan="3" class="status-description">' . $requirement['description'] . '</td></tr>';
+      }
+      else {
+        $output .= '<tr class="' . $severity['class'] . '"><td class="status-icon">' . $severity['icon'] . '</td><td class="status-title">' . $requirement['title'] . '</td><td class="status-value">' . $requirement['value'] . '</td></tr>';
+      }
+    }
+  }
+
+  $output .= '</table>';
+  return $output;
 }

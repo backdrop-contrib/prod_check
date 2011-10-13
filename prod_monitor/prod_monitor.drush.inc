@@ -8,18 +8,29 @@ function prod_monitor_drush_command() {
 
   $items['prod-monitor'] = array(
     'callback' => 'drush_prod_monitor_statusdetail',
-    'description' => "Display the Production Monitor status page",
+    'description' => 'Display the Production Monitor status page',
     'aliases' => array('pmon'),
     'arguments' => array(
       'id' => "ID of the site to view it's status in detail.",
     ),
   );
+  $items['prod-monitor-updates'] = array(
+    'callback' => '_drush_prod_monitor_updates',
+    'description' => 'Display the update module status page',
+    'aliases' => array('pmon-up'),
+    'arguments' => array(
+      'id' => 'ID of the site to view module updates for.',
+    ),
+    'options' => array(
+      '--check' => 'Check for module updates.'
+    ),
+  );
   $items['prod-monitor-fetch'] = array(
     'callback' => 'drush_prod_monitor_fetch',
-    'description' => "Fetch the status information from a given remote site.",
+    'description' => 'Fetch the status information from a given remote site.',
     'aliases' => array('pmon-fe'),
     'arguments' => array(
-      'id' => "Space delemited list of site IDs to fetch all data for.",
+      'id' => 'Space delemited list of site IDs to fetch all data for.',
     ),
   );
   $items['prod-monitor-flush'] = array(
@@ -27,28 +38,31 @@ function prod_monitor_drush_command() {
     'description' => "Remove all fetched data for a given site.",
     'aliases' => array('pmon-fl'),
     'arguments' => array(
-      'id' => "Space delemited list of site IDs to be flushed.",
+      'id' => 'Space delemited list of site IDs to be flushed.',
     ),
   );
   $items['prod-monitor-delete'] = array(
     'callback' => 'drush_prod_monitor_delsite',
-    'description' => "Completemy remove a site and all its data.",
+    'description' => 'Completemy remove a site and all its data.',
     'aliases' => array('pmon-rm'),
     'arguments' => array(
-      'id' => "Space delemited list of site IDs to be deleted.",
+      'id' => 'Space delemited list of site IDs to be deleted.',
     ),
   );
 
   return $items;
 }
 
+/**
+ * Fetch data callback.
+ */
 function drush_prod_monitor_fetch() {
   $args = func_get_args();
-  for ($i = 0; $i < count($args); $i++) {
-    $site = _prod_monitor_get_site($args[$i]);
+  foreach($args as $arg) {
+    $site = _prod_monitor_get_site($arg);
     if (!empty($site['url'])) {
-      $result = _prod_monitor_retrieve_data($args[$i], $site);
-      $site['url'] = rtrim($site['url'], '/');
+      $result = _prod_monitor_retrieve_data($arg, $site);
+      $site['url'] = _prod_monitor_sanitize_url(rtrim($site['url'], '/'));
       if ($result === FALSE) {
         drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to fetch data for').' '.$site['url'].'!');
       }
@@ -57,7 +71,7 @@ function drush_prod_monitor_fetch() {
       }
     }
     else {
-      drush_print(dt('No site found with ID ').$args[$i].'!');
+      drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('No site found with ID').' '.$arg.'!');
     }
   }
 }
@@ -67,13 +81,13 @@ function drush_prod_monitor_fetch() {
  */
 function drush_prod_monitor_flush() {
   $args = func_get_args();
-  for ($i = 0; $i < count($args); $i++) {
-    $url = _prod_monitor_get_url($args[$i]);
+  foreach ($args as $arg) {
+    $url = _prod_monitor_get_url($arg);
     if (!empty($url)) {
       if (!drush_confirm(dt('Do you really want to flush all data for').' '.$url.'?')) {
         drush_die('Aborting.');
       }
-      $result = _prod_monitor_flush_data($args[$i]);
+      $result = _prod_monitor_flush_data($arg);
       if ($result === FALSE) {
         drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to flush data!'));
       }
@@ -82,7 +96,7 @@ function drush_prod_monitor_flush() {
       }
     }
     else {
-      drush_print(dt('No site found with ID ').$args[$i].'!');
+      drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('No site found with ID').' '.$arg.'!');
     }
   }
 }
@@ -92,13 +106,13 @@ function drush_prod_monitor_flush() {
  */
 function drush_prod_monitor_delsite() {
   $args = func_get_args();
-  for ($i = 0; $i < count($args); $i++) {
-    $url = _prod_monitor_get_url($args[$i]);
+  foreach ($args as $arg) {
+    $url = _prod_monitor_get_url($arg);
     if (!empty($url)) {
       if (!drush_confirm(dt("Do you really want to delete").' '.$url.' '.dt('and all its data?'))) {
         drush_die('Aborting.');
       }
-      $result = _prod_monitor_delete_site($args[$i]);
+      $result = _prod_monitor_delete_site($arg);
       if ($result === FALSE) {
         drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to delete') . $url .'!');
       }
@@ -107,7 +121,7 @@ function drush_prod_monitor_delsite() {
       }
     }
     else {
-      drush_print(dt('No site found with ID ').$args[$i].'!');
+      drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('No site found with ID').' '.$arg.'!');
     }
   }
 }
@@ -150,7 +164,7 @@ function _drush_prod_monitor_overview() {
   foreach ($sites as $id => $site_info) {
     $rows[] = array(
       $id,
-      rtrim($site_info['url'], '/'),
+      _prod_monitor_sanitize_url(rtrim($site_info['url'], '/')),
       (!$site_info['data']) ? dt('Empty') : t('Stored'),
       $site_info['added'],
       (!$site_info['lastupdate']) ? dt('Not yet updated') : $site_info['lastupdate'],
@@ -158,16 +172,71 @@ function _drush_prod_monitor_overview() {
     );
   }
   drush_print("\033[1m".dt('Production Monitor status')."\033[0m\n", 1);
-  drush_print_table($rows, TRUE);
-  drush_print(dt('Use drush prod-monitor [id] to view the details of a specific site.'));
+  if (count($rows) > 1) {
+    drush_print_table($rows, TRUE);
+    drush_print(dt('Use drush prod-monitor [id] to view the details of a specific site.'));
+  }
+  else {
+    drush_print(dt('No sites added yet! Yo can add sites on admin/reports/prod-monitor.'), 1);
+  }
 }
 
 function _drush_prod_monitor_detail($id) {
   $site = _prod_monitor_get_site($id, TRUE);
   if (!isset($site['url'])) {
-    drush_print(dt('No site found with ID').' '.$id.'!');
+    drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('No site found with ID').' '.$id.'!');
     return;
   }
+
+  // Overall status block
+  $block = array();
+  $modules = _prod_monitor_get_site_modules($id);
+  if(!empty($modules)) {
+    $prod_mon = $site['data']['prod_mon'];
+
+    $cron = dt('Unknown');
+    if (isset($prod_mon['prod_check_cron_last'])) {
+      $cron = format_date($prod_mon['prod_check_cron_last'], 'large');
+    }
+
+    $title = dt('Unknown');
+    $color = "\033[0m";
+    if ($modules['updates'] > 0) {
+      switch ($modules['updates']) {
+        case 1:
+          $title = dt('None');
+          break;
+        case 2:
+          $color = "\033[1;33m";
+          $title = dt('Available');
+          break;
+        case 3:
+          $color = "\033[1;31m";
+          $title = dt('Security risk!');
+          break;
+      }
+    }
+    $updates = $color . $title . "\033[0m";
+
+    // Construct block
+    $block[] = array("\033[1m".dt('Overall status')."\033[0m");
+    $block[] = array(
+      dt('Drupal core version'),
+      $modules['projects']['drupal']['info']['version'],
+    );
+    $block[] = array(
+      dt('Last cron run'),
+      $cron,
+    );
+    $block[] = array(
+      dt('Updates'),
+      $updates,
+    );
+  }
+  // cleanup
+  unset($site['data']['prod_mon']);
+  unset($modules);
+
   $functions = $site['settings']['functions'];
   $nodata = dt('No data recieved yet.');
   $url = rtrim($site['url'], '/');
@@ -180,6 +249,7 @@ function _drush_prod_monitor_detail($id) {
   );
   $error = 0;
   $rows = array();
+
 
   foreach ($functions as $set => $data) {
     if (isset($site['data'][$set])) {
@@ -201,7 +271,12 @@ function _drush_prod_monitor_detail($id) {
       }
     }
   }
-  drush_print("\033[1m".dt('Production Check status for').' '.$url."\033[0m", 1);
+
+  // Actual printing.
+  drush_print("\033[1m".dt('Production Monitor status for').' '._prod_monitor_sanitize_url($url)."\033[0m", 1);
+  if (!empty($block)) {
+    drush_print_table($block);
+  }
   if (!empty($rows)) {
     drush_print_table($rows);
   }
@@ -212,5 +287,96 @@ function _drush_prod_monitor_detail($id) {
     // Would be cool if we could prefix the admin path with http://<host>/ so it
     // will become a clickable link in some terminals. Any ideas?
     drush_print("\033[1m".dt('Some errors were reported!')."\033[0m ".dt('Check the full status page on')." \033[1m".'admin/reports/prod-monitor/'.$id.'/view'."\033[0m ".dt('for details.'));
+  }
+}
+
+/**
+ * Update status page callback.
+ */
+function _drush_prod_monitor_updates() {
+  $id = func_get_args();
+  if (empty($id)) {
+    drush_set_error('prod_monitor', dt('You must provide a site ID!'));
+    return;
+  }
+  $id = $id['0'];
+
+  // Get module info.
+  $modules = _prod_monitor_get_site_modules($id);
+  $url = _prod_monitor_get_url($id);
+  if (empty($modules)) {
+    if (empty($url)) {
+      drush_set_error('prod_monitor', dt('No site found with ID').' '. $id .'!');
+      return;
+    }
+    else {
+      drush_set_error('prod_monitor', dt('No module data found for') .' '. $url.'!');
+      return;
+    }
+  }
+  else if (empty($modules['available'])) {
+    drush_set_error('prod_monitor', dt('No update data found for') .' '. $url.'!');
+    // No data, ask for refresh.
+    _drush_prod_monitor_update_refresh($id, $modules);
+  }
+
+  // Refresh if user asked for it.
+  if (drush_get_option('check')) {
+    _drush_prod_monitor_update_refresh($id, &$modules);
+  }
+
+  $last = $modules['lastupdate'];
+  module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.update');
+  $projects = _prod_monitor_calculate_project_data($id, $modules['projects'], $modules['available']);
+  // Cleanup.
+  unset($modules);
+
+  // Table headers.
+  $rows[] = array(dt('Name'), dt('Installed version'), dt('Proposed version'), dt('Status'));
+
+  // Process releases, notifying user of status and building a list of proposed updates
+  drush_include_engine('update_info', 'drupal', NULL, DRUSH_BASE_PATH . '/commands/pm/update_info');
+  drush_include(DRUSH_BASE_PATH . '/commands/pm', 'updatecode.pm');
+  $updateable = pm_project_filter($projects, $rows);
+
+  // Pipe preparation
+  if (drush_get_context('DRUSH_PIPE')) {
+    $pipe = "";
+    foreach($projects as $project){
+      $pipe .= $project['name']. " ";
+      $pipe .= $project['existing_version']. " ";
+      $pipe .= $project['candidate_version']. " ";
+      $pipe .= str_replace(' ', '-', pm_update_filter($project)). "\n";
+    }
+    drush_print_pipe($pipe);
+    // Automatically curtail update process if in pipe mode
+    $updateable = FALSE;
+  }
+
+  drush_print("\033[1m".dt('Module update status for').' '.$url."\033[0m", 1);
+  drush_print(dt('Update information last refreshed:') .' '. ($last  ? format_date($last) : dt('Never'))."\n", 1);
+  drush_print_table($rows, TRUE);
+}
+
+/**
+ * Helper function to refresh update status data.
+ */
+function _drush_prod_monitor_update_refresh($id, &$modules) {
+  if (!drush_confirm(dt('Would you like to check for module updates now?'))) {
+    drush_die('Aborting.');
+  }
+  else {
+    drush_print(dt('Refreshing update status information ...'));
+    module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.update');
+    $result = _prod_monitor_update_refresh($id, $modules['projects'], $modules['sitekey']);
+    if (!empty($result)) {
+      drush_print();
+      $modules['available'] = $result;
+      $modules['lastupdate'] = REQUEST_TIME();
+    }
+    else {
+      drush_set_error('prod_monitor', dt('Failed to refres update status information for') .' '. $url.'!');
+      drush_die('Aborting.');
+    }
   }
 }

@@ -1,5 +1,8 @@
-
-name = "Production check"
-description = "Check a site to see if it's properly setup for production use."
-package = "Monitoring"
-core = "7.x"
+name = Production check
+description = Check a site to see if it's properly setup for production use.
+package = Monitoring
+core = 7.x
+files[] = prod_check.drush.inc
+files[] = includes/prod_check.admin.inc
+files[] = includes/prod_check.theme.inc
+files[] = includes/prod_check.update.inc

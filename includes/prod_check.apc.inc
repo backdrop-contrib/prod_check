@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * APC stands for Alternative PHP chache
+ */
 
 /*
   +----------------------------------------------------------------------+
@@ -62,8 +66,8 @@ function defaults($d,$v) {
 //
 //$PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],''), ENT_QUOTES) : '';
 //Line above modified to make this work for the Drupal 'Prod check' module
-$PHP_SELF= isset($_SERVER['REQUEST_URI']) ? htmlentities(strip_tags($_SERVER['RESUEST_URI'],''), ENT_QUOTES) : '';
-$time = time();
+$PHP_SELF= isset($_SERVER['request_uri']) ? htmlentities(strip_tags($_SERVER['RESUEST_URI'],''), ENT_QUOTES) : '';
+$time = REQUEST_TIME;
 $host = getenv('HOSTNAME');
 if($host) { $host = '('.$host.')'; }
 

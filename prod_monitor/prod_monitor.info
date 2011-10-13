@@ -1,5 +1,8 @@
-
-name = "Production monitor"
-description = "Monitors sites which make use of the Production check module"
-package = "Monitoring"
-core = "7.x"
+name = Production monitor
+description = Monitors sites which make use of the Production check module
+package = Monitoring
+core = 7.x
+files[] = prod_monitor.drush.inc
+files[] = includes/prod_monitor.admin.inc
+files[] = includes/prod_monitor.theme.inc
+files[] = includes/prod_monitor.update.inc
