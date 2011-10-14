@@ -205,6 +205,7 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
     if (isset($form_state['values']['url']) && $url != $form_state['values']['url']) {
       $url = $form_state['values']['url'];
     }
+    drupal_set_title(t('Production monitor settings for !url', array('!url' => _prod_monitor_sanitize_url($url))));
     $api_key = $site['settings']['api_key'];
     $options = $site['settings']['checks'];
     $button = t('Save site');

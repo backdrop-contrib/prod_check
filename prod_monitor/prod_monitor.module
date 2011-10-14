@@ -76,8 +76,8 @@ function prod_monitor_menu() {
   $items = array();
 
   $items['admin/reports/prod-monitor'] = array(
-    'title' => 'Production monitor',
-    'description' => 'Setup the Production monitor.',
+    'title' => t('Production monitor'),
+    'description' => t('Setup the Production monitor.'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('prod_monitor_overview_form'),
     'access callback' => 'user_access',
@@ -88,8 +88,8 @@ function prod_monitor_menu() {
 
   // We need this item for a proper breadcrumb. Don't understand why (yet).
   $items['admin/reports/prod-monitor/%'] = array(
-    'title' => 'View',
-    'description' => 'View the Production monitor report page.',
+    'title' => t('View'),
+    'description' => t('View the Production monitor report page.'),
     'page callback' => 'prod_monitor_status',
     'page arguments' => array(3),
     'access callback' => 'user_access',
@@ -100,8 +100,8 @@ function prod_monitor_menu() {
   );
 
   $items['admin/reports/prod-monitor/%/view'] = array(
-    'title' => 'View',
-    'description' => 'View the Production monitor detailed report page.',
+    'title' => t('View'),
+    'description' => t('View the Production monitor detailed report page.'),
     'page callback' => 'prod_monitor_status',
     'page arguments' => array(3),
     'access callback' => 'user_access',
@@ -112,8 +112,8 @@ function prod_monitor_menu() {
   );
 
   $items['admin/reports/prod-monitor/%prod_monitor/updates'] = array(
-    'title' => 'Updates',
-    'description' => 'View the Production monitor modules update page.',
+    'title' => t('Updates'),
+    'description' => t('View the Production monitor modules update page.'),
     'page callback' => 'prod_monitor_updates',
     'page arguments' => array(3),
     'access callback' => 'user_access',
@@ -124,8 +124,8 @@ function prod_monitor_menu() {
   );
 
   $items['admin/reports/prod-monitor/%/update-check'] = array(
-    'title' => 'Updates',
-    'description' => 'Refresh Production monitor modules update page.',
+    'title' => t('Updates'),
+    'description' => t('Refresh Production monitor modules update page.'),
     'page callback' => 'prod_monitor_updates_check',
     'page arguments' => array(3),
     'access callback' => 'user_access',
@@ -135,8 +135,8 @@ function prod_monitor_menu() {
   );
 
   $items['admin/reports/prod-monitor/%/edit'] = array(
-    'title' => 'Edit',
-    'description' => 'Edit website',
+    'title' => t('Edit'),
+    'description' => t('Edit website'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('prod_monitor_overview_form', 3),
     'access callback' => 'user_access',
@@ -147,8 +147,8 @@ function prod_monitor_menu() {
   );
 
   $items['admin/reports/prod-monitor/%/flush'] = array(
-    'title' => 'Flush',
-    'description' => 'Flush website\'s data.',
+    'title' => t('Flush'),
+    'description' => t('Flush website\'s data.'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('prod_monitor_flush_form', 3),
     'access callback' => 'user_access',
@@ -159,8 +159,8 @@ function prod_monitor_menu() {
   );
 
   $items['admin/reports/prod-monitor/%/fetch'] = array(
-    'title' => 'Fetch',
-    'description' => 'Fetch website\'s data.',
+    'title' => t('Fetch'),
+    'description' => t('Fetch website\'s data.'),
     'page callback' => 'prod_monitor_fetch_data',
     'page arguments' => array(3),
     'access callback' => 'user_access',
@@ -171,8 +171,8 @@ function prod_monitor_menu() {
   );
 
   $items['admin/reports/prod-monitor/%/delete'] = array(
-    'title' => 'Delete',
-    'description' => 'Delete website',
+    'title' => t('Delete'),
+    'description' => t('Delete website'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('prod_monitor_delete_form', 3),
     'access callback' => 'user_access',
