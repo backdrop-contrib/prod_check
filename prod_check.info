@@ -1,8 +1,7 @@
-
-name = "Production check"
-description = "Check a site to see if it's properly setup for production use."
-package = "Monitoring"
-core = "7.x"
+name = Production check
+description = Check a site to see if it's properly setup for production use.
+package = Monitoring
+core = 7.x
 files[] = css/prod-check.css
 files[] = includes/prod_check.admin.inc
 files[] = includes/prod_check.apc.inc

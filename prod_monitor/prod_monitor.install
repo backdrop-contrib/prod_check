@@ -108,10 +108,32 @@ function prod_monitor_schema() {
 }
 
 /**
+ * Implementation of hook_requirements().
+ */
+function prod_monitor_requirements($phase) {
+  $requirements = array();
+  
+  switch ($phase) {
+    case 'install':
+      if (module_exists('update')) {
+        $requirements['prod_monitor_update'] = array(
+          'title' => t('Production monitor'),
+          'value' => t('Update manager enabled.'),
+          'severity' => REQUIREMENT_ERROR,
+          'description' => t('You have enabled <em>Update manager</em>. You have to disable this module before enabling Production monitor!'),
+        );
+      }
+      break;
+  }
+
+  return $requirements;
+}
+
+
+/**
  * Implementation of hook_uninstall().
  */
 function prod_monitor_uninstall() {
-
-	variable_del('prod_monitor_cron_running');
-  variable_del('prod_monitor_cron_start_at');
+  // This beats multiple variable_del() calls.
+  db_delete('variable')->condition('name', 'prod_monitor_%', 'LIKE')->execute();
 }

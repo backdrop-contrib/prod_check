@@ -1,4 +1,16 @@
 <?php
+/**
+ * Our own definition of the core requirements states. These can be found in
+ * includes/install.inc and are only available in hook_install(). That's why
+ * we redefine them here (yes, it's double!). It's nicer than including the
+ * install.inc file...
+ * Let's see if this will pose problems...
+ */
+
+define('PROD_MONITOR_REQUIREMENT_INFO', -1);
+define('PROD_MONITOR_REQUIREMENT_OK', 0);
+define('PROD_MONITOR_REQUIREMENT_WARNING', 1);
+define('PROD_MONITOR_REQUIREMENT_ERROR', 2);
 
 /**
  * We do the same here for the update module constants: redefine them so that we
@@ -174,16 +186,20 @@ function prod_monitor_menu() {
 }
 
 /**
- * Implementation of the hook_theme() registry.
+ * Implementation of hook_theme()
  */
 function prod_monitor_theme() {
   return array(
     'prod_monitor_update_report' => array(
-      'arguments' => array('id' => NULL, 'last' => NULL, 'data' => NULL),
+      'variables' => array('id' => NULL, 'last' => NULL, 'data' => NULL),
       'file' => 'includes/prod_monitor.theme.inc',
     ),
     'prod_monitor_update_version' => array(
-      'arguments' => array('version' => NULL, 'tag' => NULL, 'class' => NULL),
+      'variables' => array('version' => NULL, 'tag' => NULL, 'class' => NULL),
+      'file' => 'includes/prod_monitor.theme.inc',
+    ),
+    'prod_monitor_status_report' => array(
+      'variables' => array('requirements' => NULL),
       'file' => 'includes/prod_monitor.theme.inc',
     ),
   );
@@ -371,13 +387,13 @@ function _prod_monitor_get_sites($start_id = FALSE) {
   $sites = array();
   foreach ($result as $row) {
     
-    $id = $row['id'];
-    $row['data'] = unserialize($row['data']);
+    $id = $row->id;
+    $row->data = unserialize($row->data);
 
     // Get highest error level
     $status = -1;
-    if (!empty($row['data'])) {
-      foreach ($row['data'] as $set => $checks) {
+    if (!empty($row->data)) {
+      foreach ($row->data as $set => $checks) {
         foreach ($checks as $check => $results) {
           $status = ($results['severity'] > $status) ? $results['severity'] : $status;
         }
@@ -398,12 +414,12 @@ function _prod_monitor_get_sites($start_id = FALSE) {
       default: $status = '';
     }
 
-    $sites[$id]['url'] = $row['url'];
-    $sites[$id]['settings'] = unserialize($row['settings']);
+    $sites[$id]['url'] = $row->url;
+    $sites[$id]['settings'] = unserialize($row->settings);
     $sites[$id]['data'] = $data_status;
     $sites[$id]['status'] = $status;
-    $sites[$id]['added'] = format_date($row['added'], 'small');
-    $sites[$id]['lastupdate'] = (empty($row['lastupdate'])) ? FALSE : format_date($row['lastupdate'], 'small');
+    $sites[$id]['added'] = format_date($row->added, 'small');
+    $sites[$id]['lastupdate'] = (empty($row->lastupdate)) ? FALSE : format_date($row->lastupdate, 'small');
   }
 
   return $sites;
@@ -419,10 +435,10 @@ function _prod_monitor_get_sites($start_id = FALSE) {
  */
 function _prod_monitor_get_site($id, $all = FALSE) {
   if (!$all) {
-    $site = db_query("SELECT url, settings FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAll();
+    $site = db_query("SELECT url, settings FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAssoc();
   }
   else {
-    $site = db_query("SELECT * FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAll();
+    $site = db_query("SELECT * FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAssoc();
   } 
 
   if (!empty($site)) {
@@ -446,13 +462,12 @@ function _prod_monitor_get_site($id, $all = FALSE) {
  */
 function _prod_monitor_get_site_modules($id, $exists = FALSE) {
   if (!$exists) {
-    $sql = db_query("SELECT * FROM {prod_monitor_site_modules} WHERE id = %d");
+    $modules = db_query('SELECT * FROM {prod_monitor_site_modules} WHERE id = :id', array (':id' => $id))->fetchAssoc();
   }
   else {
-    $sql = db_query("SELECT id FROM {prod_monitor_site_modules} WHERE id = %d");
+    $modules = db_query('SELECT id FROM {prod_monitor_site_modules} WHERE id = :id', array (':id' => $id))->fetchAssoc();
   }
 
-  $modules = db_fetch_array(db_query($sql, $id));
   if (!empty($modules) && !$exists) {
     $modules['projects'] = unserialize($modules['projects']);
     $modules['available'] = unserialize($modules['available']);
@@ -468,8 +483,7 @@ function _prod_monitor_get_site_modules($id, $exists = FALSE) {
  *  int site id.
  */
 function _prod_monitor_get_update_status($id) {
-  $sql = db_query("SELECT updates FROM {prod_monitor_site_modules} WHERE id = %d");
-  return db_result(db_query($sql, $id));
+  return db_query('SELECT updates FROM {prod_monitor_site_modules} WHERE id = :id', array(':id' => $id))->fetchField();
 }
 
 /**
@@ -492,15 +506,18 @@ function _prod_monitor_flush_data($id) {
  * Added for easy implementation of Drush functionality.
  */
 function _prod_monitor_delete_site($id) {
-  // Is this one compatible with all DB types? If not, raise a flag!
-  return db_query("DELETE FROM {prod_monitor_sites} ps, {prod_monitor_site_modules} pm USING ps LEFT JOIN pm ON ps.id = pm.id WHERE ps.id = %d", $id);
+  // TODO: Anyone know how to convert this one to the (GMBLGRRRRRRaaargh) new D7
+  // querybuilder?
+  return db_query("DELETE FROM {prod_monitor_sites} ps, {prod_monitor_site_modules} pm USING ps LEFT JOIN pm ON ps.id = pm.id WHERE ps.id = :id", array(':id' => $id));
 }
 
 /**
  * Helper function for Drush to show proper info when deleting a site.
  */
 function _prod_monitor_get_url($id) {
-  return _prod_monitor_sanitize_url(rtrim(db_result(db_query("SELECT url FROM {prod_monitor_sites} WHERE id = %d", $id)), '/'));
+  $url = db_query('SELECT url FROM {prod_monitor_sites} WHERE id = :id', array(':id' => $id))->fetchField();
+
+  return _prod_monitor_sanitize_url(rtrim($url, '/'));
 }
 
 /**

@@ -11,6 +11,7 @@
  */
 function theme_prod_check_status_report($variables) {
   $requirements = $variables['requirements'];
+
   $severities = array(
     PROD_CHECK_REQUIREMENT_INFO => array(
       'title' => t('Info'),

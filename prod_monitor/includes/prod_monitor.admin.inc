@@ -26,7 +26,7 @@ function prod_monitor_status($id) {
       $output .= '<h2>'.t($data['title']).'</h2>'."\n";
       $output .= '<div class="description"><p><em>'.t($data['description']).'</em></p></div>'."\n";
       if (!empty($site['data'][$set])) {
-        $output .= theme('status_report', $site['data'][$set]);
+        $output .= theme('prod_monitor_status_report', array('requirements' => $site['data'][$set]));
       }
       else  {
         $output .= '<p>'.$nodata.'</p><p>&nbsp;</p>';
@@ -38,7 +38,9 @@ function prod_monitor_status($id) {
     $output = '<p>'.$nodata.'</p><p>&nbsp;</p>';
   }
 
-  $output .= drupal_get_form('_prod_monitor_update_data_form', $id, $site);
+  // TODO: do not use drupal_render but change this so that hook_page_alter can
+  // be used as well.
+  $output .= drupal_render(drupal_get_form('_prod_monitor_update_data_form', $id, $site));
 
   return $output;
 }
@@ -70,7 +72,7 @@ function _prod_monitor_status_general($prod_mon, $modules) {
       $updates,
     ),
   );
-  $output .= theme('table', array(), $rows);
+  $output .= theme('table', array('header' => array(), 'rows' => $rows));
 
   return $output;
 }
@@ -115,19 +117,22 @@ function prod_monitor_updates($modules) {
   if (!empty($modules) && !empty($modules['projects']) && !empty($modules['available'])) {
     module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.update');
     $data = _prod_monitor_calculate_project_data($id, $modules['projects'], $modules['available']);
-    $output .= theme('prod_monitor_update_report', $id, $modules['lastupdate'], $data);
+    $output .= theme('prod_monitor_update_report', array('id' => $id, 'last' => $modules['lastupdate'], 'data' => $data));
   }
   // No data, so report this to the user and instruct him/her on how to retrieve it.
   else {
     $destination = drupal_get_destination();
-    $output .= theme(
-      'prod_monitor_update_report', $id, $modules['lastupdate'],
-      t(
-        'No information is available about potential new releases for currently installed modules and themes. To check for updates, you may need to !cron or you can !check. Please note that checking for available updates can take a long time, so please be patient.',
-        array(
-          '!cron' => l(t('run cron'), 'admin/reports/status/run-cron', array('attributes' => array('title' => t('run cron')), 'query' => $destination)),
-          '!check' => l(t('check manually'), 'admin/reports/prod-monitor/'.$id.'/update-check', array('attributes' => array('title' => t('check manually')))),
-        )
+    $output .= theme('prod_monitor_update_report',
+      array(
+        'id' => $id,
+        'last' => $modules['lastupdate'],
+        'data' => t(
+                    'No information is available about potential new releases for currently installed modules and themes. To check for updates, you may need to !cron or you can !check. Please note that checking for available updates can take a long time, so please be patient.',
+                    array(
+                      '!cron' => l(t('run cron'), 'admin/reports/status/run-cron', array('attributes' => array('title' => t('run cron')), 'query' => $destination)),
+                      '!check' => l(t('check manually'), 'admin/reports/prod-monitor/'.$id.'/update-check', array('attributes' => array('title' => t('check manually')))),
+                    )
+                  )
       )
     );
   }
@@ -348,7 +353,7 @@ function _prod_monitor_overview_form_table($sites) {
 
     if (!empty($site_info['status'])) {
       $title = t(ucwords($site_info['status']));
-      $status = array('data' => '<strong>'.l($title, 'admin/reports/prod-monitor/'.$id.'/view', array('attributes' => array('title' => $title, 'class' => $site_info['status']))).'</strong>', 'class' => $site_info['status']);
+      $status = array('data' => '<strong>'.l($title, 'admin/reports/prod-monitor/'.$id.'/view', array('attributes' => array('title' => $title, 'class' => $site_info['status']))).'</strong>', 'class' => array($site_info['status']));
     }
     else {
       $status = '';
@@ -370,11 +375,12 @@ function _prod_monitor_overview_form_table($sites) {
         $flush,
         l(t('Delete'), 'admin/reports/prod-monitor/'.$id.'/delete', array('attributes' => array('title' => t('Delete')))),
       ),
-      'class' => $site_info['status'],
+      'class' => array($site_info['status']),
     );
     $rows[] = $row;
   }
-  return theme('table', $headers, $rows);
+
+  return theme('table', array('header' => $headers, 'rows' => $rows));
 }
 
 /**
@@ -461,7 +467,7 @@ function prod_monitor_fetch_data($id) {
 /**
  * Form to delete a site's data
  */
-function prod_monitor_flush_form(&$form_state, $id) {
+function prod_monitor_flush_form($form, &$form_state, $id) {
   $form = array();
 
   $form['site_id'] = array(
@@ -498,7 +504,7 @@ function prod_monitor_flush_form_submit($form, &$form_state) {
 /**
  * Form to delete a site
  */
-function prod_monitor_delete_form(&$form_state, $id) {
+function prod_monitor_delete_form($form, &$form_state, $id) {
   $form = array();
 
   $form['site_id'] = array(
@@ -532,7 +538,7 @@ function prod_monitor_delete_form_submit($form, &$form_state) {
   drupal_goto('admin/reports/prod-monitor');
 }
 
-function _prod_monitor_update_data_form($form_state, $id, $site_info) {
+function _prod_monitor_update_data_form($form, $form_state, $id, $site_info) {
   $form['site_id'] = array(
     '#type' => 'value',
     '#value' => $id,
