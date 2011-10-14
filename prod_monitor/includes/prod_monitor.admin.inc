@@ -418,7 +418,7 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
       }
       else {
         // Add situation, insert.
-        $update = NULL;
+        $update = array();
         $site->added = time();
       }
 
