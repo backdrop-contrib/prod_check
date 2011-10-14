@@ -5,7 +5,7 @@
  */
 function prod_check_uninstall() {
   // This beats multiple variable_del() calls.
-  db_query('DELETE FROM {variable} WHERE name LIKE "prod_check_%"');
+  db_delete('variable')->condition('name', 'prod_check_%', 'LIKE')->execute();
 }
 
 /**
