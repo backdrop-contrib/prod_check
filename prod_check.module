@@ -208,9 +208,14 @@ function prod_check_get_data($ping_key, $checks) {
     foreach ($checks as $set => $calls) {
       $data[$set] = array();
       foreach ($calls as $key => $function) {
-        $func = '_prod_check_' . $function;
-        // $func() will execute the function with the name we composed above.
-        $data[$set] = array_merge($data[$set], $func('xmlrpc'));
+        // We add this check to allow for the following case:
+        //  1. 3rd party module implements hook_prod_check_alter()
+        //  2. settings are adjusted to include reporting for this function
+        //  3. 3rd party module is disabled / removed
+        //  4. settings still contain this function to be executed
+        if (function_exists($function)) {
+          $data[$set] = array_merge($data[$set], $function('xmlrpc'));
+        }
       }
     }
   }
@@ -260,9 +265,14 @@ function prod_check_nagios() {
     $checks = variable_get('prod_check_nagios_checks', array());
     foreach ($checks as $set => $calls) {
       foreach ($calls as $key => $function) {
-        $func = '_prod_check_' . $function;
-        // $func() will execute the function with the name we composed above.
-        $status = array_merge($status, $func('nagios'));
+        // We add this check to allow for the following case:
+        //  1. 3rd party module implements hook_prod_check_alter()
+        //  2. settings are adjusted to include reporting for this function
+        //  3. 3rd party module is disabled / removed
+        //  4. settings still contain this function to be executed
+        if (function_exists($function)) {
+          $status = array_merge($status, $function('nagios'));
+        }
       }
     }
 
@@ -324,6 +334,8 @@ function prod_check_nagios() {
       // Remove last comma and space.
       $message = rtrim($message, ', ');
       $message .= ']';
+      // TODO: add | followed by performance data here if enabled.
+
       // Reset status array.
       $status = array();
       $status['PRODCHK'] = array(
@@ -448,9 +460,9 @@ function _prod_check_functions() {
     'title' => 'Settings',
     'description' => 'Checks wether various settings are fit for a production environment.',
     'functions' => array(
-      'error_reporting' =>  'Error reporting',
-      'user_register' => 'User registration',
-      'site_mail' => 'Site e-mail',
+      '_prod_check_error_reporting' =>  'Error reporting',
+      '_prod_check_user_register' => 'User registration',
+      '_prod_check_site_mail' => 'Site e-mail',
     ),
   );
 
@@ -459,8 +471,8 @@ function _prod_check_functions() {
     'title' => 'Server',
     'description' => 'Checks certain server side parameters such as APC.',
     'functions' => array(
-      'apc' => 'APC',
-      'release_notes' => 'Release notes',
+      '_prod_check_apc' => 'APC',
+      '_prod_check_release_notes' => 'Release notes',
     ),
   );
 
@@ -469,12 +481,12 @@ function _prod_check_functions() {
     'title' => 'Performance',
     'description' => 'Checks if performance settings are OK for production use.',
     'functions' => array(
-      'page_cache' => 'Page caching',
-      'page_compression' => 'Page compression',
-      'boost' => 'Boost settings',
-      'block_cache' => 'Block cache',
-      'preprocess_css' => 'Optimize CSS files',
-      'preprocess_js' => 'Optimize JavaScript files',
+      '_prod_check_page_cache' => 'Page caching',
+      '_prod_check_page_compression' => 'Page compression',
+      '_prod_check_boost' => 'Boost settings',
+      '_prod_check_block_cache' => 'Block cache',
+      '_prod_check_preprocess_css' => 'Optimize CSS files',
+      '_prod_check_preprocess_js' => 'Optimize JavaScript files',
     ),
   );
 
@@ -483,9 +495,9 @@ function _prod_check_functions() {
     'title' => 'Security',
     'description' => 'Various security related checks.',
     'functions' => array(
-      'node_available' => 'Is /node available?',
-      /*'user_pass' => 'User passwords',*/
-      'anonymous_rights' => 'Anonymous user rights',
+      '_prod_check_node_available' => 'Is /node available?',
+      /*'_prod_check_user_pass' => 'User passwords',*/
+      '_prod_check_anonymous_rights' => 'Anonymous user rights',
     ),
   );
 
@@ -494,9 +506,9 @@ function _prod_check_functions() {
     'title' => 'Modules',
     'description' => 'Checks if certain modules are on or off and if they\'re properly configured.',
     'functions' => array(
-      'update_status' => 'Update status',
-      'devel' => 'Devel',
-      'search_config' => 'Search config',
+      '_prod_check_update_status' => 'Update status',
+      '_prod_check_devel' => 'Devel',
+      '_prod_check_search_config' => 'Search config',
     ),
   );
 
@@ -505,12 +517,12 @@ function _prod_check_functions() {
     'title' => 'SEO',
     'description' => 'Checks if basic SEO modules are enabled.',
     'functions' => array(
-      'googleanalytics' => 'Google Analytics',
-      'metatag' => 'Metatag',
-      'page_title' => 'Page titles',
-      'pathauto' => 'Path auto',
-      'redirect' => 'Redirect',
-      'xmlsitemap' => 'XML sitemap',
+      '_prod_check_googleanalytics' => 'Google Analytics',
+      '_prod_check_metatag' => 'Metatag',
+      '_prod_check_page_title' => 'Page titles',
+      '_prod_check_pathauto' => 'Path auto',
+      '_prod_check_redirect' => 'Redirect',
+      '_prod_check_xmlsitemap' => 'XML sitemap',
     ),
   );
 
@@ -519,10 +531,14 @@ function _prod_check_functions() {
     'title' => 'Production monitor',
     'description' => 'Specific checks that only work with Production monitor!',
     'functions' => array(
-      'module_list' => 'Check module updates',
-      'cron_last' => 'Report last cron run',
+      '_prod_check_module_list' => 'Check module updates',
+      '_prod_check_cron_last' => 'Report last cron run',
     ),
   );
+
+  // Invoke hook_prod_check_alter() here to add additional checks implemented by third
+  // party modules.
+  drupal_alter('prod_check', $functions);
 
   return $functions;
 }

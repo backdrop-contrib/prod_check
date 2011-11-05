@@ -48,3 +48,20 @@ function prod_check_requirements($phase) {
   return $requirements;
 }
 
+/**
+ * Implementation of hook_update_N().
+ * Update 7100 - Update prod_check_nagios_checks if present.
+ */
+function prod_check_update_7100() {
+  if ($checks = variable_get('prod_check_nagios_checks', FALSE)) {
+    $prefix = '_prod_check_';
+    foreach ($checks as $set => &$calls) {
+      foreach ($calls as $key => &$function) {
+        if (stripos($function, $prefix) === FALSE) {
+          $function = $prefix . $function;
+        }
+      }
+    }
+    variable_set('prod_check_nagios_checks', $checks);
+  }
+}

@@ -15,9 +15,7 @@ function prod_check_status() {
   foreach ($functions as $set => $data) {
     $result = array();
     foreach ($data['functions'] as $function => $title) {
-      $func = '_prod_check_' . $function;
-      // $func() will execute the function with the name we composed above.
-      $result = array_merge($result, $func());
+      $result = array_merge($result, $function());
     }
     $output .= '<h2>' . t($data['title']) . '</h2>' . "\n";
     $output .= '<div class="description"><p><em>' . t($data['description']) . '</em></p></div>' . "\n";
