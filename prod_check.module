@@ -483,6 +483,7 @@ function _prod_check_functions() {
     'title' => 'Security',
     'description' => 'Various security related checks.',
     'functions' => array(
+      'node_available' => 'Is /node available?',
       /*'user_pass' => 'User passwords',*/
       'anonymous_rights' => 'Anonymous user rights',
     ),
@@ -1010,6 +1011,46 @@ function _prod_check_preprocess_js($caller = 'internal') {
 }
 
 // --- Security ---
+
+// /node available
+function _prod_check_node_available($caller = 'internal') {
+  $check = array();
+  $msg = '';
+
+  $title = 'Is /node available?';
+  $path = '';
+  if ($caller != 'internal') {
+    $path = PRODCHECK_BASEURL;
+  }
+
+  $result = menu_execute_active_handler('node', FALSE);
+  switch ($result) {
+    case MENU_ACCESS_DENIED:
+      $msg = t('The default /node page created by Drupal core has been disabled by means of an <em>Access Denied</em>. Better still is to simply unset the menu item by using hook_menu_alter().');
+      $secure = FALSE;
+      break;
+    case MENU_NOT_FOUND:
+      $secure = TRUE;
+      break;
+    default:
+      $msg = t('The default /node page created by Drupal core is still enabled. With improper setup of node types, this can reveal sensitive information (e.g. using the profile module with automatic publish to front activiated)!');
+      $secure = FALSE;
+  }
+
+  $check['prod_check_node_available'] = array(
+    '#title' => t($title),
+    '#state' => $secure,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : REQUIREMENT_WARNING,
+    '#value_ok'  => t('Secure'),
+    '#value_nok'  => t('Security risk!'),
+    '#description_ok'  => t('No security risk found.'),
+    '#description_nok' => $msg,
+    '#nagios_key' => 'NODE',
+    '#nagios_type' => 'state',
+  );
+
+  return prod_check_execute_check($check, $caller);
+}
 
 // Users
 function _prod_check_user_pass($caller = 'internal') {
