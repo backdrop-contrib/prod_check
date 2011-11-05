@@ -977,18 +977,7 @@ function _prod_check_preprocess_js($caller = 'internal') {
   // Check settings.
   if (variable_get('preprocess_js', 0) == 0) {
     $state = FALSE;
-    // Check if Advanced CSS/JS Aggregation is being used
-    if (module_exists('advagg')) {
-      $title = 'Advanced JS Aggregation';
-      $path = 'admin/settings/advagg';
-      if (variable_get('advagg_enabled', 1) == 1) {
-        $state = TRUE;
-        // Check if the CSS compress submodule is used.
-        if (module_exists('advagg_js_compress')) {
-          $path .= '/js-compress';
-        }
-      }
-    }
+    // TODO: In D6 there was an extra check on the 'advagg' module. Keep an eye out for a D7 port or a D7 alternative!
   }
 
   if ($caller != 'internal') {
