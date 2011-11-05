@@ -76,8 +76,8 @@ function prod_check_menu() {
   $items = array();
 
   $items['admin/reports/prod-check'] = array(
-    'title' => t('Production check'),
-    'description' => t('View the Production check report page.'),
+    'title' => 'Production check',
+    'description' => 'View the Production check report page.',
     'page callback' => 'prod_check_status',
     'access callback' => 'user_access',
     'access arguments' => array('access production check'),
@@ -86,8 +86,8 @@ function prod_check_menu() {
   );
 
   $items['admin/config/system/prod-check'] = array(
-    'title' => t('Production check'),
-    'description' => t('Setup the Production check module.'),
+    'title' => 'Production check',
+    'description' => 'Setup the Production check module.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('prod_check_settings_form'),
     'access callback' => 'user_access',
@@ -97,7 +97,7 @@ function prod_check_menu() {
   );
 
   $items['admin/reports/status/apc'] = array(
-    'title' => t('APC'),
+    'title' => 'APC',
     'page callback' => 'prod_check_apc',
     'access callback' => 'user_access',
     'access arguments' => array('access production check'),
