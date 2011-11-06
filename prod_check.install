@@ -49,8 +49,7 @@ function prod_check_requirements($phase) {
 }
 
 /**
- * Implementation of hook_update_N().
- * Update 7100 - Update prod_check_nagios_checks if present.
+ * Update prod_check_nagios_checks settings if present.
  */
 function prod_check_update_7100() {
   if ($checks = variable_get('prod_check_nagios_checks', FALSE)) {
@@ -63,5 +62,7 @@ function prod_check_update_7100() {
       }
     }
     variable_set('prod_check_nagios_checks', $checks);
+    return t('Successfully updated prod_check_nagios_checks settings.');
   }
+  return t('No prod_check_nagios_checks found that needed an update.');
 }

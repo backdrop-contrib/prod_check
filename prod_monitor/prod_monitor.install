@@ -137,3 +137,92 @@ function prod_monitor_uninstall() {
   // This beats multiple variable_del() calls.
   db_delete('variable')->condition('name', 'prod_monitor_%', 'LIKE')->execute();
 }
+
+/**
+ * Increase the size of the settings field for table prod_monitor_sites.
+ */
+function prod_monitor_update_7100() {
+  // Note http://drupal.org/node/150220 about not using hook_schema() here!
+  db_change_field(
+    'prod_monitor_sites',
+    'settings',
+    'settings',
+    array(
+      'description' => t('All settings related to the site.'),
+      'type' => 'text',
+      'size' => 'medium',
+      'default' => NULL,
+    )
+  );
+}
+
+/**
+ * Update xmlrpc settings for all sites.
+ */
+function prod_monitor_update_7101(&$sandbox) {
+  $prefix = '_prod_check_';
+  $ret = array();
+
+  // Update 5 sites at a time
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['current_site'] = 0;
+    $sandbox['max'] = db_query('SELECT COUNT(DISTINCT id) FROM {prod_monitor_sites}')->fetchField();
+  }
+
+  $sites = db_select('prod_monitor_sites', 'pms')
+    ->fields('pms', array('id', 'settings'))
+    ->condition('id', $sandbox['current_site'], '>')
+    ->range(0, 5)
+    ->orderBy('id', 'ASC')
+    ->execute();
+
+  foreach ($sites as $site) {
+    $change = FALSE;
+    $site->settings = unserialize($site->settings);
+    // Adjust functions
+    foreach ($site->settings['functions'] as $set => &$data) {
+      foreach ($data['functions'] as $function => $title) {
+        if (stripos($function, $prefix) === FALSE) {
+          // Can't 'rename' keys, so we remove them and add a new one.
+          unset($data['functions'][$function]);
+          $data['functions'][$prefix . $function] = $title;
+          $change = TRUE;
+        }
+      }
+    }
+    // Prevent any chance of the next loop from going kaka cuckoo.
+    // See warning at http://php.net/manual/en/control-structures.foreach.php
+    unset($data, $function);
+    // Adjust checks
+    foreach ($site->settings['checks'] as $set => &$calls) {
+      foreach ($calls as $key => &$function) {
+        if (stripos($function, $prefix) === FALSE) {
+          $function = $prefix . $function;
+          $change = TRUE;
+        }
+      }
+    }
+    // Only update record if there were changes. Added to prevent loss of data
+    // when (accidentally) running this update twice.
+    if ($change) {
+      $site->settings = serialize($site->settings);
+      db_update('prod_monitor_sites')
+        ->fields(array('settings' => $site->settings))
+        ->condition('id', $site->id)
+        ->execute();
+      $msg = t('Successfully updated all remote site settings.');
+    }
+    else {
+      $msg = t('No remote site settings found that needed an update.');
+    }
+
+    $sandbox['progress']++;
+    $sandbox['current_site'] = $site->id;
+  }
+
+  $sandbox['#finished'] = empty($sandbox['max']) ? 1 : ($sandbox['progress'] / $sandbox['max']);
+
+  return $msg;
+}
+

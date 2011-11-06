@@ -506,9 +506,25 @@ function _prod_monitor_flush_data($id) {
  * Added for easy implementation of Drush functionality.
  */
 function _prod_monitor_delete_site($id) {
-  // TODO: Anyone know how to convert this one to the (GMBLGRRRRRRaaargh) new D7
-  // querybuilder?
-  return db_query("DELETE FROM {prod_monitor_sites} ps, {prod_monitor_site_modules} pm USING ps LEFT JOIN pm ON ps.id = pm.id WHERE ps.id = :id", array(':id' => $id));
+  $txn = db_transaction();
+
+  // If anyone has an idea on how to do this on one single query, like we did in
+  // the D6 version, drop us a line!
+  try {
+    $query = db_delete('prod_monitor_sites')
+      ->condition('id', $id)
+      ->execute();
+    $query = db_delete('prod_monitor_site_modules')
+      ->condition('id', $id)
+      ->execute();
+
+    return TRUE;
+  }
+  catch (Exception $e) {
+    $txn->rollback();
+    watchdog_exception('prod_monitor', $e);
+  }
+  return FALSE;
 }
 
 /**
