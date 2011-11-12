@@ -90,7 +90,7 @@ function prod_check_settings_form($form, &$form_state) {
     '#required' => FALSE,
   );
 
-  // APC userd.
+  // APC user.
   $form['prod_check_apc']['prod_check_apcuser'] = array(
     '#type' => 'textfield',
     '#title' => t('APC advanced features username'),
@@ -108,6 +108,32 @@ function prod_check_settings_form($form, &$form_state) {
     '#required' => FALSE,
   );
 
+  $form['prod_check_memcache'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Memcache settings'),
+    '#description' => t(
+      'These settings are used in the !link functionality.', prod_check_link_array('memcache', 'admin/reports/status/memcache')),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  // Memcache user.
+  $form['prod_check_memcache']['prod_check_memcacheuser'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Memcache username'),
+    '#default_value' => variable_get('prod_check_memcacheuser', 'memcache'),
+    '#size' => 60,
+    '#description' => t('The username for logging in to the Memcache settings page.'),
+    '#required' => FALSE,
+  );
+  // Memcache password.
+  $form['prod_check_memcache']['prod_check_memcachepass'] = array(
+    '#type' => 'password_confirm',
+    '#title' => t('APC advanced features password'),
+    '#size' => 60,
+    '#description' => t('The password for logging in to the Memcache settings page.'),
+    '#required' => FALSE,
+  );
 
   // XMLRPC settings.
   $form['prod_check_xmlrpc'] = array(
@@ -388,6 +414,7 @@ function prod_check_settings_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
     case t('Save configuration'):
       variable_set('prod_check_sitemail', $form_state['values']['prod_check_sitemail']);
+      // APC.
       variable_set('prod_check_apc_expunge', $form_state['values']['prod_check_apc_expunge']);
       variable_set('prod_check_apcuser', $form_state['values']['prod_check_apcuser']);
       if (!empty($form_state['values']['prod_check_apcpass'])) {
@@ -395,6 +422,14 @@ function prod_check_settings_form_submit($form, &$form_state) {
       }
       else {
         variable_set('prod_check_apcpass', 'password');
+      }
+      // Memcache.
+      variable_set('prod_check_memcacheuser', $form_state['values']['prod_check_memcacheuser']);
+      if (!empty($form_state['values']['prod_check_memcachepass'])) {
+        variable_set('prod_check_memcachepass', $form_state['values']['prod_check_memcachepass']);
+      }
+      else {
+        variable_set('prod_check_memcachepass', 'password');
       }
       if ($form_state['values']['prod_check_enable_xmlrpc']) {
         // Enable.
@@ -443,5 +478,21 @@ function prod_check_apc() {
   define('ADMIN_USERNAME', variable_get('prod_check_apcuser', 'apc'));
   define('ADMIN_PASSWORD', variable_get('prod_check_apcpass', 'password'));
   include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.apc.inc');
+  exit;
+}
+
+function prod_check_memcache() {
+  global $conf;
+
+  define('ADMIN_USERNAME', variable_get('prod_check_memcacheuser', 'memcache'));
+  define('ADMIN_PASSWORD', variable_get('prod_check_memcachepass', 'password'));
+  if (isset($conf['memcache_servers'])) {
+    global $MEMCACHE_SERVERS;
+    $MEMCACHE_SERVERS = array_keys($conf['memcache_servers']);
+    include(drupal_get_path('module', 'prod_check').'/includes/prod_check.memcache.inc');
+  }
+  else {
+    print "No memcache servers found in settings.php.";
+  }
   exit;
 }

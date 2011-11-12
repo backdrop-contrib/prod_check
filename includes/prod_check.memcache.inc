@@ -54,7 +54,9 @@ function get_host_port_from_server($server){
 		return array($server, 0);
 	}
 	else {
-		return values;
+		//return values;
+		//Line above modified to make this work for the Drupal 'Prod check' module
+		return $values;
 	}
 }
 
@@ -529,7 +531,7 @@ $_GET['op'] = !isset($_GET['op'])? '1':$_GET['op'];
 //$PHP_SELF= isset($_SERVER['PHP_SELF']) ? htmlentities(strip_tags($_SERVER['PHP_SELF'],'')) : '';
 //Line above modified to make this work for the Drupal 'Prod check' module
 global $PHP_SELF;
-$PHP_SELF= isset($_SERVER['REQUEST_URI']) ? htmlentities(strip_tags($_SERVER['REQUEST_URI'],'')) : '';
+$PHP_SELF= isset($_GET['q']) ? base_path() . htmlentities(strip_tags($_GET['q'],'')) : '';
 
 $PHP_SELF=$PHP_SELF.'?';
 $time = time();

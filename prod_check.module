@@ -105,6 +105,15 @@ function prod_check_menu() {
     'file' => 'includes/prod_check.admin.inc',
   );
 
+  $items['admin/reports/status/memcache'] = array(
+    'title' => 'Memcache',
+    'page callback' => 'prod_check_memcache',
+    'access callback' => 'user_access',
+    'access arguments' => array('access production check'),
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/prod_check.admin.inc',
+  );
+
   return $items;
 }
 
