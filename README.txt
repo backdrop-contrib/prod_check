@@ -57,9 +57,10 @@ The hook receives the default functions divided into 7 categories:
  - modules
  - seo
  - prod_mon
+ - perf_data
 
-'prod_mon' is a special category that will only be used by the accompanying
-Production monitor module.
+'prod_mon' & 'perf_data' are special categories that will only be used by the
+accompanying Production monitor module.
 
 Your function that implements the actual check must accept 1 string parameter
 and return an array using the prod_check_execute_check() function.

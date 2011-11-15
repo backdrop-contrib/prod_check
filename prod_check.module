@@ -273,6 +273,7 @@ function prod_check_nagios() {
     $status = array();
     $checks = variable_get('prod_check_nagios_checks', array());
     foreach ($checks as $set => $calls) {
+      // TODO: add check on $set here. Single out 'perf_data' and treat differently.
       foreach ($calls as $key => $function) {
         // We add this check to allow for the following case:
         //  1. 3rd party module implements hook_prod_check_alter()

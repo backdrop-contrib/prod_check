@@ -15,7 +15,11 @@ function prod_check_status() {
   foreach ($functions as $set => $data) {
     $result = array();
     foreach ($data['functions'] as $function => $title) {
-      $result = array_merge($result, $function());
+      // We add this check to prevent breaking the whole page if some module
+      // messes up with hook_prod_check_alter().
+      if (function_exists($function)) {
+        $result = array_merge($result, $function());
+      }
     }
     $output .= '<h2>' . t($data['title']) . '</h2>' . "\n";
     $output .= '<div class="description"><p><em>' . t($data['description']) . '</em></p></div>' . "\n";
