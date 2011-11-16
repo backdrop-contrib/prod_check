@@ -12,6 +12,9 @@ function prod_check_status() {
   // _prod_check_functions().
   $functions = _prod_check_functions();
   unset($functions['prod_mon']);
+  // Not needed here.
+  unset($functions['perf_data']);
+
   foreach ($functions as $set => $data) {
     $result = array();
     foreach ($data['functions'] as $function => $title) {
@@ -326,6 +329,7 @@ function _prod_check_functions_as_form($compatibility = 'all') {
   $functions = _prod_check_functions();
   if ($compatibility == 'all') {
     unset($functions['prod_mon']);
+    unset($functions['perf_data']);
   }
   foreach ($functions as $set => $data) {
     $rest = $i % 2;

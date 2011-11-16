@@ -111,6 +111,19 @@ function prod_monitor_menu() {
     'weight' => 10,
   );
 
+  // TODO: Hide this tab if there's no perf data using hook_load like with the /updates callback!
+  $items['admin/reports/prod-monitor/%/performance'] = array(
+    'title' => t('Performance'),
+    'description' => t('View the performance data for this site.'),
+    'page callback' => 'prod_monitor_performance',
+    'page arguments' => array(3),
+    'access callback' => 'user_access',
+    'access arguments' => array('access production monitor'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/prod_monitor.admin.inc',
+    'weight' => 12,
+  );
+
   $items['admin/reports/prod-monitor/%prod_monitor/updates'] = array(
     'title' => t('Updates'),
     'description' => t('View the Production monitor modules update page.'),
@@ -200,6 +213,10 @@ function prod_monitor_theme() {
     ),
     'prod_monitor_status_report' => array(
       'variables' => array('requirements' => NULL),
+      'file' => 'includes/prod_monitor.theme.inc',
+    ),
+    'prod_monitor_performance' => array(
+      'arguments' => array('title' => NULL, 'data' => NULL),
       'file' => 'includes/prod_monitor.theme.inc',
     ),
   );

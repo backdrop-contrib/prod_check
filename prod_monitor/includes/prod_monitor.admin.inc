@@ -20,7 +20,7 @@ function prod_monitor_status($id) {
   }
   unset($site['data']['prod_mon']);
 
-  // Execute all functions per set as defined in the functions array.
+  // Display results of all checks.
   foreach ($functions as $set => $data) {
     if (isset($site['data'][$set])) {
       $output .= '<h2>'.t($data['title']).'</h2>'."\n";
@@ -101,6 +101,23 @@ function _prod_monitor_generate_updates_link($id, $update_status) {
   }
 
   return $updates;
+}
+
+/**
+ * Callback for performance page.
+ */
+function prod_monitor_performance($id) {
+  // TODO: add 'get stats now' button.
+  $site = _prod_monitor_get_site($id, TRUE);
+  
+  // TODO: make a special function _prod_monitor_retrieve_perf_data();
+  //_prod_monitor_retrieve_data($id, $site_info, TRUE);
+
+  dpm($site);
+
+  $title = t('my site');
+  $data  = 'hello world!';
+  return theme('prod_monitor_performance', $title, $data);
 }
 
 /**
@@ -208,6 +225,7 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
     drupal_set_title(t('Production monitor settings for !url', array('!url' => _prod_monitor_sanitize_url($url))));
     $api_key = $site['settings']['api_key'];
     $options = $site['settings']['checks'];
+    $perf_enabled = isset($site['settings']['performance']) ? $site['settings']['performance'] : array();
     $button = t('Save site');
     $msg = FALSE;
   }
@@ -265,6 +283,12 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
         '#tree' => TRUE,
       );
 
+      // Single out perf_data if present to treat differently.
+      if (isset($functions['perf_data'])) {
+        $performance = $functions['perf_data'];
+        unset($functions['perf_data']);
+      }
+
       $i = 1;
       foreach ($functions as $set => $data) {
         $rest = $i%2;
@@ -280,7 +304,7 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
         $i++;
       }
       if ($edit) {
-        // Just to increase readability of the source here.
+        // Just to increase readability of the source code here.
         $monitor_settings = &$form['sites']['prod_check_settings']['monitor_settings'];
         // Set default values to last saved state
         foreach (element_children($monitor_settings) as $set) {
@@ -293,6 +317,28 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
           }
         }
       }
+
+      // Add performance logging section.
+      $form['sites']['prod_check_performance'] = array(
+        '#type' => 'fieldset',
+        '#title' => t("Configure which module's performance data you wish to log."),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+      );
+      $perf_options = array();
+      foreach ($performance['functions'] as $function => $title) {
+        $perf_options[$function] = t($title);
+      }
+      $form['sites']['prod_check_performance']['performance'] = array(
+        '#type' => 'checkboxes',
+        '#options' => $perf_options,
+        '#default_value' => array(),
+        '#description' => t('Indicate which performance data you want to store. This data can be provided by the modules listed here.'),
+      );
+      if ($edit) {
+        $form['sites']['prod_check_performance']['performance']['#default_value'] = $perf_enabled;
+      }
+
       $form['sites']['fetch'] = array(
         '#type' => 'checkbox',
         '#title' => t('Fetch data immediately'),
@@ -423,6 +469,8 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
       }
 
       $site->url = $form_state['values']['url'];
+
+      // Get enabled checks.
       $checks = array();
       foreach ($form_state['values']['monitor_settings'] as $set => $data) {
         foreach ($data as $check => $value) {
@@ -431,11 +479,23 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
           }
         }
       }
+
+
+      // Get enabled performance logs.
+      $performance = array();
+      foreach ($form_state['values']['performance'] as $value) {
+        if ($value) {
+          $performance[] = $value;
+        }
+      }
+
+      // Prepare settings data.
       $site->settings = serialize(
         array(
           'api_key' => $form_state['values']['api_key'],
           'functions' => $form_state['storage']['functions'],
           'checks' => $checks,
+          'performance' => $performance,
         )
       );
 
