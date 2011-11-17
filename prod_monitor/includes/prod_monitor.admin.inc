@@ -495,6 +495,7 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
           'api_key' => $form_state['values']['api_key'],
           'functions' => $form_state['storage']['functions'],
           'checks' => $checks,
+          // TODO: add performance to checks under 'prod_mon'
           'performance' => $performance,
         )
       );

@@ -23,7 +23,7 @@ function prod_monitor_schema() {
         'settings' => array(
           'description' => 'All settings related to the site.',
           'type' => 'text',
-          'size' => 'normal',
+          'size' => 'medium',
           'default' => NULL,
         ),
         'data' => array(
@@ -63,7 +63,7 @@ function prod_monitor_schema() {
           'default' => NULL,
         ),
         'sitekey' => array(
-          'description' => 'All modules installed on the remote site.',
+          'description' => 'The unique key for the site.',
           'type' => 'varchar',
           'length' => 32,
           'not null' => TRUE,
@@ -104,6 +104,42 @@ function prod_monitor_schema() {
        ),
       'primary key' => array('id'),
     ),
+    'prod_monitor_site_performance' => array(
+      'description' => 'Holds all retrieved performance data for a specific site.',
+      'fields' => array(
+        'id' => array(
+          'description' => 'The primary identifier for a site.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'module' => array(
+          'description' => 'The module that reported the performance data.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+        ),
+        'data' => array(
+          'description' => 'The actual performance data.',
+          'type' => 'text',
+          'size' => 'medium',
+          'default' => NULL,
+        ),
+        'fetched' => array(
+          'description' => 'The Unix timestamp when the data was retrieved from the remote site.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        ),
+      ),
+      'foreign keys' => array(
+        'prod_monitor_sites' => array(
+          'table' => 'prod_monitor_sites',
+          'columns' => array('id' => 'id'),
+         ),
+       ),
+      'primary key' => array('id', 'module', 'fetched'),
+    ),
   );
 }
 
@@ -135,7 +171,7 @@ function prod_monitor_requirements($phase) {
  */
 function prod_monitor_uninstall() {
   // This beats multiple variable_del() calls.
-  db_delete('variable')->condition('name', 'prod_monitor_%', 'LIKE')->execute();
+  db_delete('variable')->condition('name', 'prod_monitor\_%', 'LIKE')->execute();
 }
 
 /**
@@ -148,7 +184,7 @@ function prod_monitor_update_7100() {
     'settings',
     'settings',
     array(
-      'description' => t('All settings related to the site.'),
+      'description' => 'All settings related to the site.',
       'type' => 'text',
       'size' => 'medium',
       'default' => NULL,
@@ -226,3 +262,10 @@ function prod_monitor_update_7101(&$sandbox) {
   return $msg;
 }
 
+/**
+ * Add new table to store performance data.
+ */
+function prod_monitor_update_7102() {
+  $schema = prod_monitor_schema();
+  db_create_table('prod_monitor_site_performance', $schema['prod_monitor_site_performance']);
+}

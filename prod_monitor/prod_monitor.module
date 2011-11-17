@@ -300,7 +300,11 @@ function _prod_monitor_retrieve_functions($url, $api_key, $msg = TRUE) {
 }
 
 /**
- * Retrieve data form from Prod check using XMLRPC
+ * Retrieve data form from Prod check using XMLRPC and store it in the database.
+ *
+ * @param $id id of the site the data is being fetched for
+ * @param $site_info associative array containing api_key and checks to execute
+ * @param $msg wether or not to give feedback to the user of the action
  */
 function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
   $url = rtrim($site_info['url'], '/') . '/xmlrpc.php';
@@ -330,7 +334,14 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
       unset($data['prod_mon']['prod_check_module_list']);
     }
 
-    // Write site data
+    // Extract the performance data to be stored in a different table
+    $perf_data = array();
+    if (isset($data['perf_data'])) {
+      $perf_data = $data['perf_data'];
+      unset($data['perf_data']);
+    }
+
+    // Store site data
     $site = new stdClass();
     $site->id = $id;
     $site->data = serialize($data);
@@ -353,7 +364,7 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
       if ($msg) {
         drupal_set_message(t('Data for %link successfully updated.', array('%link' => $site_info['url'])));
       }
-      // Write module data if there is an update.
+      // Store module data if there is an update.
       if (!empty($module_list)) {
         // Check if data present, so we can update.
         $modules = _prod_monitor_get_site_modules($id, TRUE);
@@ -384,6 +395,16 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
         else if ($msg) {
           drupal_set_message(t('Module data for %link successfully updated.', array('%link' => $site_info['url'])));
         }
+      }
+      if (!empty($perf_data)) {
+        // TODO: store performance data here.
+        // Add for loop to store the data of each module separately.
+        /*$performance = new stdClass();
+        $performance->id = $id;
+        $performance->data = serialize($module_list['projects']);
+        $performance->sitekey = $module_list['site_key'];
+        $performance->lastfetch = $module_list['last_update'];
+        $result = drupal_write_record('prod_monitor_site_performance', $performance);*/
       }
     }
   }
