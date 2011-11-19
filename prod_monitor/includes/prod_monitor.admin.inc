@@ -225,7 +225,9 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
     drupal_set_title(t('Production monitor settings for !url', array('!url' => _prod_monitor_sanitize_url($url))));
     $api_key = $site['settings']['api_key'];
     $options = $site['settings']['checks'];
-    $perf_enabled = isset($site['settings']['performance']) ? $site['settings']['performance'] : array();
+    if (isset($site['settings']['checks']['perf_data'])) {
+      $perf_enabled = $site['settings']['checks']['perf_data'];
+    }
     $button = t('Save site');
     $msg = FALSE;
   }
@@ -482,10 +484,10 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
 
 
       // Get enabled performance logs.
-      $performance = array();
+      $checks['perf_data'] = array();
       foreach ($form_state['values']['performance'] as $value) {
         if ($value) {
-          $performance[] = $value;
+          $checks['perf_data'][] = $value;
         }
       }
 
@@ -495,8 +497,6 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
           'api_key' => $form_state['values']['api_key'],
           'functions' => $form_state['storage']['functions'],
           'checks' => $checks,
-          // TODO: add performance to checks under 'prod_mon'
-          'performance' => $performance,
         )
       );
 
