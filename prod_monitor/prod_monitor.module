@@ -199,6 +199,19 @@ function prod_monitor_menu() {
 }
 
 /**
+ * Implementation of hook_load()
+ */
+function prod_monitor_load($id) {
+  // Get module data.
+  $modules = _prod_monitor_get_site_modules($id);
+  // Hide tab if no module data found.
+  if (!isset($modules['projects']) || empty($modules['projects'])) {
+    $modules = FALSE;
+  }
+  return $modules;
+}
+
+/**
  * Implementation of hook_theme()
  */
 function prod_monitor_theme() {
@@ -216,23 +229,17 @@ function prod_monitor_theme() {
       'file' => 'includes/prod_monitor.theme.inc',
     ),
     'prod_monitor_performance' => array(
-      'arguments' => array('title' => NULL, 'data' => NULL),
-      'file' => 'includes/prod_monitor.theme.inc',
+      'arguments' => array('data' => NULL),
+      'template' => 'templates/prod-monitor-performance',
     ),
   );
 }
 
 /**
- * Implementation of hook_load()
+ * Implementation of theme_preprocess_hook()
  */
-function prod_monitor_load($id) {
-  // Get module data.
-  $modules = _prod_monitor_get_site_modules($id);
-  // Hide tab if no module data found.
-  if (!isset($modules['projects']) || empty($modules['projects'])) {
-    $modules = FALSE;
-  }
-  return $modules;
+function template_preprocess_prod_monitor_performance(&$vars) {
+  
 }
 
 /**
@@ -347,6 +354,7 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
     $site->data = serialize($data);
     $site->lastupdate = REQUEST_TIME;
     $result = drupal_write_record('prod_monitor_sites', $site, array('id'));
+    // TODO: pour this into a function, it's thrice the same!
     if (!$result) {
       watchdog('prod_monitor', 'Could not update data for %link', array('%link' => $site_info['url']), WATCHDOG_ERROR);
       if ($msg) {
@@ -379,6 +387,7 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
         $modules->sitekey = $module_list['site_key'];
         $modules->lastfetch = $module_list['last_update'];
         $result = drupal_write_record('prod_monitor_site_modules', $modules, $update);
+        // TODO: pour this into a function, it's thrice the same!
         if (!$result) {
           watchdog('prod_monitor', 'Could not update module data for %link', array('%link' => $site_info['url']), WATCHDOG_ERROR);
           if ($msg) {
@@ -397,14 +406,31 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
         }
       }
       if (!empty($perf_data)) {
-        // TODO: store performance data here.
-        // Add for loop to store the data of each module separately.
-        /*$performance = new stdClass();
-        $performance->id = $id;
-        $performance->data = serialize($module_list['projects']);
-        $performance->sitekey = $module_list['site_key'];
-        $performance->lastfetch = $module_list['last_update'];
-        $result = drupal_write_record('prod_monitor_site_performance', $performance);*/
+        foreach ($perf_data as $module => $module_data) {
+          $performance = new stdClass();
+          $performance->id = $id;
+          $performance->module = $module;
+          $performance->data = serialize($module_data);
+          $performance->fetched = time();
+          $result = drupal_write_record('prod_monitor_site_performance', $performance);
+          // TODO: pour this into a function, it's thrice the same!
+          if (!$result) {
+            watchdog('prod_monitor', 'Could not update performance data for %link', array('%link' => $site_info['url']), WATCHDOG_ERROR);
+            if ($msg) {
+              drupal_set_message(
+                t('Performance data for %link not successfully saved. Errors have been !link.',
+                  array(
+                    '%link' => $site_info['url'],
+                    '!link' => l(t('logged'), 'admin/reports/dblog'),
+                  )
+                ), 'error'
+              );
+            }
+          }
+          else if ($msg) {
+            drupal_set_message(t('Performance data for %link successfully updated.', array('%link' => $site_info['url'])));
+          }
+        }
       }
     }
   }
@@ -424,7 +450,6 @@ function _prod_monitor_get_sites($start_id = FALSE) {
 
   $sites = array();
   foreach ($result as $row) {
-    
     $id = $row->id;
     $row->data = unserialize($row->data);
 
@@ -490,7 +515,7 @@ function _prod_monitor_get_site($id, $all = FALSE) {
 }
 
 /**
- * Helper function to get a site's mdules by ID.
+ * Helper function to get a site's modules by ID.
  *
  * @param $id
  *  int site id.
@@ -522,6 +547,23 @@ function _prod_monitor_get_site_modules($id, $exists = FALSE) {
  */
 function _prod_monitor_get_update_status($id) {
   return db_query('SELECT updates FROM {prod_monitor_site_modules} WHERE id = :id', array(':id' => $id))->fetchField();
+}
+
+/**
+ * Helper function to get the performance data of a site by ID.
+ *
+ * @param $id
+ *  int site id.
+ */
+function _prod_monitor_get_performance_data($id) {
+  $result = db_query('SELECT module, data, fetched FROM {prod_monitor_site_performance} WHERE id = :id', array(':id' => $id));
+
+  $data = array();
+  foreach ($result as $row) {
+    $data[$row->module . '-' . $row->fetched] = unserialize($row->data);
+  }
+
+  return $data;
 }
 
 /**

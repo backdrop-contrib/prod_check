@@ -107,17 +107,25 @@ function _prod_monitor_generate_updates_link($id, $update_status) {
  * Callback for performance page.
  */
 function prod_monitor_performance($id) {
+  drupal_set_title($title);
+
   // TODO: add 'get stats now' button.
   $site = _prod_monitor_get_site($id, TRUE);
-  
-  // TODO: make a special function _prod_monitor_retrieve_perf_data();
-  //_prod_monitor_retrieve_data($id, $site_info, TRUE);
+
+  $data = _prod_monitor_get_performance_data($id);
 
   dpm($site);
+  dpm($data);
 
   $title = t('my site');
   $data  = 'hello world!';
-  return theme('prod_monitor_performance', $title, $data);
+
+  return array(
+    'performance_data' => array(
+      '#data' => $data,
+      '#theme' => 'prod_monitor_performance',
+    ),
+  );
 }
 
 /**
@@ -337,7 +345,7 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
         '#default_value' => array(),
         '#description' => t('Indicate which performance data you want to store. This data can be provided by the modules listed here.'),
       );
-      if ($edit) {
+      if ($edit && isset($perf_enabled)) {
         $form['sites']['prod_check_performance']['performance']['#default_value'] = $perf_enabled;
       }
 

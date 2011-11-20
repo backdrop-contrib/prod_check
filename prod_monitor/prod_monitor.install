@@ -125,6 +125,12 @@ function prod_monitor_schema() {
           'size' => 'medium',
           'default' => NULL,
         ),
+        'annotation' => array(
+          'description' => 'A short annotation to this specific dataset.',
+          'type' => 'varchar',
+          'length' => 255,
+          'default' => NULL,
+        ),
         'fetched' => array(
           'description' => 'The Unix timestamp when the data was retrieved from the remote site.',
           'type' => 'int',
