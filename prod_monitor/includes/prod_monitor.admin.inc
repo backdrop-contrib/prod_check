@@ -114,12 +114,6 @@ function prod_monitor_performance($id) {
 
   $data = _prod_monitor_get_performance_data($id);
 
-  dpm($site);
-  dpm($data);
-
-  $title = t('my site');
-  $data  = 'hello world!';
-
   return array(
     'performance_data' => array(
       '#data' => $data,

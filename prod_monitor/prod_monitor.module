@@ -239,7 +239,7 @@ function prod_monitor_theme() {
  * Implementation of theme_preprocess_hook()
  */
 function template_preprocess_prod_monitor_performance(&$vars) {
-  
+  //TODO: add preprocessing here.
 }
 
 /**
@@ -560,7 +560,7 @@ function _prod_monitor_get_performance_data($id) {
 
   $data = array();
   foreach ($result as $row) {
-    $data[$row->module . '-' . $row->fetched] = unserialize($row->data);
+    $data[$row->module][$row->fetched] = unserialize($row->data);
   }
 
   return $data;
