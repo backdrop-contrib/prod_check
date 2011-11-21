@@ -22,7 +22,8 @@
           $cols .= "    data.addColumn('number', '$title');\n";
           $i++;
         }
-        $row_tmp .= "$row[0], ";
+        // Cast empty strings to 0.
+        $row_tmp .= (int) $row[0] . ', ';
       }
       $row_data .= "      [new Date($row_time), " . rtrim($row_tmp, ', ') . "],\n";
     }
