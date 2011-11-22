@@ -1,32 +1,19 @@
+<?php
+/**
+ * @file
+ * Template that renders a google graph. Feel free to override it if you prefer
+ * another graphing mechanism by placing it in your themes folder.
+ *
+ * Available variables:
+ *  $data contains raw data fetched from the prod_monitor_performance table.
+ *  $graphs contains preprocessed data to allow (more) easy output.
+ *
+ * TODO: use Drupal.behaviors to do all of this JS properly.
+ */
+?>
 <script type='text/javascript' src='http://www.google.com/jsapi'></script>
 
 <?php
-  // TODO: move this first code block to the preprocess function?
-
-  // This data holds all graphs per module, timestamp and per unit (MB, ms, ...).
-  $graphs = array();
-  foreach ($data as $module => $data_set) {
-    // Counters to make sure we only add columns once.
-    $count = $i = 0;
-    foreach ($data_set as $time => $params) {
-      // Store title for this modules graphs.
-      $graphs[$module]['title'] = $params['title'];
-      // Count all rows.
-      $count = count($params['data']);
-      foreach ($params['data'] as $title => $row) {
-        if ($i < $count) {
-          // Setup the columns for the graph in such a way that they are
-          // organised by unit so we can draw one graph per unit.
-          $graphs[$module][$row[1]]['cols'][] = "      data.addColumn('number', '$title');";
-          $i++;
-        }
-        // Cast empty strings to 0 and store the data per timestamp and unit so
-        // that we can draw one graph per unit.
-        $graphs[$module][$row[1]]['rows'][$time][] = (int) $row[0];
-      }
-    }
-  }
-
   // Output all graphs.
   foreach ($graphs as $module => $data) {
 ?>
@@ -44,7 +31,7 @@
 <?php
       // Add columns.
       foreach ($numbers['cols'] as $col) {
-        print $col . "\n";
+        print "    data.addColumn('number', '$col');\n";
       }
 ?>
     data.addRows([

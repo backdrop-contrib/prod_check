@@ -111,8 +111,7 @@ function prod_monitor_menu() {
     'weight' => 10,
   );
 
-  // TODO: Hide this tab if there's no perf data using hook_load like with the /updates callback!
-  $items['admin/reports/prod-monitor/%/performance'] = array(
+  $items['admin/reports/prod-monitor/%prod_monitor_perf/performance'] = array(
     'title' => t('Performance'),
     'description' => t('View the performance data for this site.'),
     'page callback' => 'prod_monitor_performance',
@@ -212,6 +211,19 @@ function prod_monitor_load($id) {
 }
 
 /**
+ * Implementation of hook_load()
+ */
+function prod_monitor_perf_load($id) {
+  // Get performance data.
+  $data = _prod_monitor_get_performance_data($id);
+  // Hide tab if no module data found.
+  if (empty($data)) {
+    return FALSE;
+  }
+  return $data;
+}
+
+/**
  * Implementation of hook_theme()
  */
 function prod_monitor_theme() {
@@ -239,7 +251,30 @@ function prod_monitor_theme() {
  * Implementation of theme_preprocess_hook()
  */
 function template_preprocess_prod_monitor_performance(&$vars) {
-  //TODO: add preprocessing here.
+  // This array holds all graphs per module, per timestamp and per unit (MB, ms,
+  // ...).
+  $vars['graphs'] = array();
+  foreach ($vars['data'] as $module => $data_set) {
+    // Counters to make sure we only add columns once.
+    $count = $i = 0;
+    foreach ($data_set as $time => $params) {
+      // Store title for this modules graphs.
+      $vars['graphs'][$module]['title'] = $params['title'];
+      // Count all rows.
+      $count = count($params['data']);
+      foreach ($params['data'] as $title => $row) {
+        if ($i < $count) {
+          // Setup the columns for the graph in such a way that they are
+          // organised by unit so we can draw one graph per unit.
+          $vars['graphs'][$module][$row[1]]['cols'][] = $title;
+          $i++;
+        }
+        // Cast empty strings to 0 and store the data per timestamp and unit so
+        // that we can draw one graph per unit.
+        $vars['graphs'][$module][$row[1]]['rows'][$time][] = (int) $row[0];
+      }
+    }
+  }
 }
 
 /**
