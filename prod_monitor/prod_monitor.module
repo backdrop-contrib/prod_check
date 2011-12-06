@@ -264,6 +264,10 @@ function template_preprocess_prod_monitor_performance(&$vars) {
       // Count all rows.
       $count = count($params['data']);
       foreach ($params['data'] as $title => $row) {
+        // Rows without a specified unit.
+        if (!isset($row[1])) {
+          $row[1] = '';
+        }
         if ($i < $count) {
           // Setup the columns for the graph in such a way that they are
           // organised by unit so we can draw one graph per unit.
