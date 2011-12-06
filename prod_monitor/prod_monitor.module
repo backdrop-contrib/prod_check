@@ -241,7 +241,7 @@ function prod_monitor_theme() {
       'file' => 'includes/prod_monitor.theme.inc',
     ),
     'prod_monitor_performance' => array(
-      'arguments' => array('data' => NULL),
+      'render element' => 'elements',
       'template' => 'templates/prod-monitor-performance',
     ),
   );
@@ -251,6 +251,7 @@ function prod_monitor_theme() {
  * Implementation of theme_preprocess_hook()
  */
 function template_preprocess_prod_monitor_performance(&$vars) {
+  $vars['data'] = $vars['elements']['#data'];
   // This array holds all graphs per module, per timestamp and per unit (MB, ms,
   // ...).
   $vars['graphs'] = array();
