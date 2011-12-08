@@ -185,9 +185,9 @@ function prod_monitor_updates_check($id) {
 function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
   drupal_set_title(t('Production monitor settings'));
   $base = drupal_get_path('module', 'prod_monitor');
-  drupal_add_css($base.'/css/prod-monitor.css');
-  drupal_add_js($base.'/js/jquery.equalheights.js', 'module', 'header');
-  drupal_add_js($base.'/js/prod-monitor.js', 'module', 'header');
+  drupal_add_css($base.'/css/prod-monitor.css', 'file');
+  drupal_add_js($base.'/js/jquery.equalheights.js', 'file');
+  drupal_add_js($base.'/js/prod-monitor.js', 'file');
 
   $form = array();
 

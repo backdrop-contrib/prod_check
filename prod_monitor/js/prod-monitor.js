@@ -1,8 +1,12 @@
+(function ($) {
 
-/* Prod monitor settings page styling */
+  // Prod monitor settings page styling.
+  Drupal.behaviors.prod_monitor = {
+    attach: function(context, settings) {
+      $('#prod-check-settings', context).equalHeights('px');
+      $('#prod-check-settings', context).equalWidths('px');
+    }
+  };
 
-$(document).ready(function() {
-  $('#prod-check-settings').equalHeights('px');
-  $('#prod-check-settings').equalWidths('px');
-});
+})(jQuery);
 
