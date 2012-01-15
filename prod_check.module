@@ -435,7 +435,7 @@ function prod_check_execute_check($checks, $caller, $compatibility = 'all') {
  * Helper function to generate generic 'settings OK' description.
  */
 function prod_check_ok_title($title, $path, $text = 'Your !link settings are OK for production use.') {
-  return t($text, array('!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>'));
+  return t($text, array('!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())).'</em>'));
 }
 
 /**
@@ -445,6 +445,9 @@ function prod_check_link_array($title, $path, $fragment=NULL) {
   $options = array(
     'attributes' => array(
       'title' => t($title),
+    ),
+    'query' => array(
+      drupal_get_destination(),
     ),
   );
   if ($fragment) {
@@ -584,7 +587,7 @@ function _prod_check_error_reporting($caller = 'internal') {
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are set to %setting1, they should be set to %setting2 on a producion environment!',
       array(
-        '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>',
+        '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())).'</em>',
         '%setting1' => $setting[$current],
         '%setting2' => $setting[0],
       )
@@ -619,7 +622,7 @@ function _prod_check_user_register($caller = 'internal') {
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are set to %setting1. Are you sure this is what you want and did not mean to use %setting2? With improperly setup access rights, this can be dangerous...',
       array(
-        '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>',
+        '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())).'</em>',
         '%setting1' => $setting[$current],
         '%setting2' => $setting[2],
       )
@@ -798,7 +801,7 @@ function _prod_check_page_cache($caller = 'internal') {
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are disabled. You should at least set page caching to "Cache pages for anonymous users" on a production site! You should also consider using the !boost module!',
       array(
-        '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)))).'</em>',
+        '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())).'</em>',
         '!boost' => '<em>'.l(t('Boost'), 'http://drupal.org/project/boost', array('attributes' => array('title' => t('Boost')))).'</em>',
       )
     ),
@@ -923,7 +926,7 @@ function _prod_check_boost($caller = 'internal') {
       '#description_ok'  => prod_check_ok_title($subtitle, $path),
       '#description_nok' => t('Your !link settings are not ok! You should enable entity tags (!etag) in Boost so that user side caching and bandwith usage will be optimal! You do need to enable !mod for this to work.',
         array(
-          '!link' => '<em>'.l(t($subtitle), $path, array('attributes' => array('title' => t($subtitle)))).'</em>',
+          '!link' => '<em>'.l(t($subtitle), $path, array('attributes' => array('title' => t($subtitle)), 'query' => drupal_get_destination())).'</em>',
           '!etag' => '<em>'.l(t('ETags'), 'http://en.wikipedia.org/wiki/HTTP_ETag', array('attributes' => array('title' => t('Etags')))).'</em>',
           '!mod' => '<em>'.l(t('mod_headers'), 'http://httpd.apache.org/docs/2.0/mod/mod_headers.html', array('attributes' => array('title' => t('mod_headers')))).'</em>',
         )
@@ -1084,7 +1087,7 @@ function _prod_check_user_pass($caller = 'internal') {
   // Be sure to omit the anonymous user with id 0.
   $result = db_query('SELECT uid, name FROM {users} WHERE uid <> 0 AND status = 1 AND MD5(name) = pass');
   foreach ($result as $row) {
-      $list .= l($row['name'], $path.'user/'.$row['uid'].'/edit', array('attributes' => array('title' => t('Edit user').' '.$row['name']))).', ';
+      $list .= l($row['name'], $path.'user/'.$row['uid'].'/edit', array('attributes' => array('title' => t('Edit user').' '.$row['name']), 'query' => drupal_get_destination())).', ';
   }
   if (!empty($list)) {
     $secure = FALSE;
@@ -1237,12 +1240,8 @@ function _prod_check_search_config($caller = 'internal') {
     $msg_nok = t('You have not enabled the !link module. Please double check if you need this module or not, to be able to hide certain content types from being searched by users.', prod_check_link_array($title, 'http://drupal.org/project/search_config'));
   }
   else {
-
-    $check_anonymous_search_all = db_query("SELECT rid, permission, module 
-    FROM {role_permission} WHERE rid = 1 and module = 'search_config' and permission = 'search all content'")->fetchField();
-
-    $check_anonymous_content_types = db_query("SELECT permission, module 
-    FROM {role_permission} WHERE rid = 1 and module = 'search_config'")->fetchCol();
+    $check_anonymous_search_all = db_query("SELECT rid, permission, module FROM {role_permission} WHERE rid = 1 AND module = 'search_config' AND permission = 'search all content'")->fetchField();
+    $check_anonymous_content_types = db_query("SELECT permission, module FROM {role_permission} WHERE rid = 1 AND module = 'search_config'")->fetchCol();
 
     if($check_anonymous_search_all == 1) {
       $error = TRUE;
@@ -1252,7 +1251,7 @@ function _prod_check_search_config($caller = 'internal') {
       $error = FALSE;
       $str_anonymous_content = implode(', ', $check_anonymous_content_types);
 
-      $msg_ok = t('You have enabled the !link module, anonymous users can search for "!content_types" -content type(s)!', array(
+      $msg_ok = t('You have enabled the !link module, anonymous users can search for "!content_types" -content type(s).', array(
         '!link' => implode(prod_check_link_array($title, $path, $fragment)),
         '!content_types' => $str_anonymous_content,
       ));
@@ -1261,7 +1260,6 @@ function _prod_check_search_config($caller = 'internal') {
     if ($error) {
       $severity = ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR;
       $value_nok = t('Not properly configured.');
-      $msg_nok = t('You have enabled the !link module, but no content types are excluded from being searched!', prod_check_link_array($title, $path, $fragment));
     }
   }
 
