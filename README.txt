@@ -34,6 +34,30 @@ monitor there. You will obviousely need to install the Nagios module to make
 this functionality work.
 
 
+Remote module update status monitoring
+======================================
+Since Production check recommends to turn of the Update module, we have
+integrated its functionality in both Production check and Production monitor.
+Production check can be configured to allow to transfer its module list with
+versioning information once a week at a given time.
+Production monitor can be configured to download this data along with all the
+rest. It will then, upon your request (still need to add this on cron, but it's
+a heavy operation, thinking about the best way to do this: the boost crawler
+code makes a good candidate), check for module updates locally for the remote
+site. Production check and Production monitor have the necessary code embedded
+so you will never need to activate the Update module, not even on the monitor
+site!
+
+
+Performance monitoring
+======================
+
+If you install the performance module on a production site, you can use
+Production monitor to remotely monitor the collected performance data. A new
+subtab will be available displaying the module data in some nice Google charts.
+Be sure to activate the fetching of performance data in the site's config!
+
+
 Dependencies
 ============
 
@@ -42,6 +66,13 @@ Dependencies
 There are no true dependencies defined in the .info file, but naturally you need
 to install the Nagios module if you would like to integrate Production check
 with your Nagios monitoring setup.
+
+- Performance logging   http://drupal.org/project/performance
+
+Again, no true dependencies defined, but if you want remote performance logging,
+this module can provide it for you! Install it on the remote site and enable the
+fetching of it's data when adding a site to Production monitor.
+
 
 Development: hook_prod_check_alter()
 ====================================
@@ -80,6 +111,9 @@ function my_module_prod_check_alter(&$checks) {
 
   // Add custom check for Production Monitor only
   $checks['prod_mon']['functions']['my_module_prod_mon_check'] = 'My Production Monitor only check';
+
+  // Gather performance data
+  $checks['perf_data']['functions']['my_module_prod_check_return_data'] = 'Performance logging';
 
   // Add entirely new category.
   $checks['my_category'] = array(
@@ -152,6 +186,35 @@ function my_module_prod_mon_check($caller = 'internal') {
 
   return prod_check_execute_check($check, $caller, 'prod_mon');
 }
+
+/**
+ * Return performance data to Production Monitor.
+ */
+function my_module_prod_check_return_data() {
+  $data = my_module_gather_summary_data();
+
+  if (!$data) {
+    return array(
+      'my_module' => array (
+        'title' => 'Performance logging',
+        'data' => 'No performance data found.',
+       ),
+    );
+  }
+
+  return array(
+    'my_module' => array (
+      'title' => 'Performance logging',
+      'data' => array(
+        'Total number of page accesses' => array($data['total_accesses']),
+        'Average duration per page' => array($data['ms_avg'], 'ms'),
+        'Average memory per page' => array($data['mb_avg'], 'MB'),
+        'Average querycount' => array($data['query_count']),
+        'Average duration per query' => array($data['ms_query'], 'ms'),
+      ),
+    ),
+  );
+}
 ?>
 
 
@@ -204,6 +267,13 @@ Nagios
 3. Untick the checboxes for those items you do not whish to be monitored by
  Nagios.
 4. Save the settings and you're good to go!
+
+Performance logging
+-------------------
+1. Download and install the Nagios module from http://drupal.org/project/performance
+ as per its readme instructions
+2. Enable fetching of performance data on /admin/reports/prod-monitor when
+ adding or editing a site.
 
 Drush
 -----
@@ -323,3 +393,10 @@ Support
 For support requests, bug reports, and feature requests, please us the issue cue
 of Menu Clone on http://drupal.org/project/issues/prod_check.
 
+
+Thanks
+======
+
+kbahey (http://drupal.org/user/4063) for making the performance logging
+integration possible!
+bocaj (http://drupal.org/user/582042) for all the great contributions!
