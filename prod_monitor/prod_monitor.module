@@ -43,14 +43,14 @@ function prod_monitor_help($path, $arg) {
       $output .= t('The overview table gives you an overview of what sites you have added together with their status. The status will be the highest error detected in the retrieved data set.').'<br />';
       $output .= t('The per site functions <strong>View</strong>, <strong>Edit</strong>, <strong>Fetch data</strong>, <strong>Flush</strong> and <strong>Delete</strong> should be self explanatory.').'</p>';
       // No break!
-    case 'admin/reports/prod-monitor/%/edit':
+    case 'admin/reports/prod-monitor/site/%/edit':
       $output .= '<p><strong>'.t('Website URL & API key').'</strong><br />';
       $output .= t('To add a site, enter it\'s <strong>full url</strong>, including the protocol, but omitting the <em>xmlrpc.php</em> part and the <strong>API key</strong> that you have configured for it using the <strong>Production check</strong> module. Now click the <strong>Get settings</strong> button.').'<br />';
       $output .= t('All of the checks that the <em>Production check</em> module can perform are fetched from the remote site and presented as an array of checkboxes. Finally you can configure what exactly you wish to monitor for this site, then hit the <strong>Add site</strong> button.').'<br />';
       $output .= t('Each time you edit a site, the settings are fetched from the remote server so that any new checks that might have been added to the <em>Production check</em> module there are always up to date in the monitoring section.').'<br />';      $output .= t('<strong>Fetch data immediately</strong> does exactly what it says and fetches all the configured data from the remote site and will direct you to the report page.').'</p>';
       break;
-    case 'admin/reports/prod-monitor/%':
-    case 'admin/reports/prod-monitor/%/view':
+    case 'admin/reports/prod-monitor/site/%':
+    case 'admin/reports/prod-monitor/site/%/view':
       $output .= '<p>'.t('This is an overview of all checks performed by the <em>Production check</em> module and their status <strong>on the remote site</strong>. You can click the links inside the report to jump to the module\'s settings page, or to go to the project page of a module, in case you need to download it for installation.').'</p>';
       break;
   }
@@ -70,14 +70,15 @@ function prod_monitor_permission() {
 }
 
 /**
- * Implementation of hook_menu()
+ * Implementation of hook_menu().
+ * Note: do not use t() in this hook! Translation is handled by core!
  */
 function prod_monitor_menu() {
   $items = array();
 
   $items['admin/reports/prod-monitor'] = array(
-    'title' => t('Production monitor'),
-    'description' => t('Setup the Production monitor.'),
+    'title' => 'Production monitor',
+    'description' => 'Setup the Production monitor.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('prod_monitor_overview_form'),
     'access callback' => 'user_access',
@@ -86,12 +87,18 @@ function prod_monitor_menu() {
     'file' => 'includes/prod_monitor.admin.inc',
   );
 
-  // We need this item for a proper breadcrumb. Don't understand why (yet).
-  $items['admin/reports/prod-monitor/%'] = array(
-    'title' => t('View'),
-    'description' => t('View the Production monitor report page.'),
+  // This hook_menu() thing, still can't fully see the logic in it. However,
+  // this here is what I want to achieve. It would be nice to see the /view/ bit
+  // in the path dissapear, that would finish it entirely. I'll settle for this
+  // now, caused me enough headache already ;-)
+
+  // The actual callback used by the default primary & secondary tabs,
+  // they trickle upwards seeking for a callback to end up here.
+  $items['admin/reports/prod-monitor/site/%'] = array(
+    'title' => 'View',
+    'description' => 'View the Production monitor report page.',
     'page callback' => 'prod_monitor_status',
-    'page arguments' => array(3),
+    'page arguments' => array(4),
     'access callback' => 'user_access',
     'access arguments' => array('access production monitor'),
     'type' => MENU_CALLBACK,
@@ -99,23 +106,26 @@ function prod_monitor_menu() {
     'weight' => 10,
   );
 
-  $items['admin/reports/prod-monitor/%/view'] = array(
-    'title' => t('View'),
-    'description' => t('View the Production monitor detailed report page.'),
-    'page callback' => 'prod_monitor_status',
-    'page arguments' => array(3),
-    'access callback' => 'user_access',
-    'access arguments' => array('access production monitor'),
+  // Default primary tab (callback for this is it's parent path).
+  $items['admin/reports/prod-monitor/site/%/view'] = array(
+    'title' => 'View',
     'type' => MENU_DEFAULT_LOCAL_TASK,
-    'file' => 'includes/prod_monitor.admin.inc',
-    'weight' => 10,
-  );
+    'weight' => 0,
+   );
 
-  $items['admin/reports/prod-monitor/%prod_monitor_perf/performance'] = array(
-    'title' => t('Performance'),
+  // Default secondary (sub) tab (callback for this is it's parent path).
+  $items['admin/reports/prod-monitor/site/%/view/status'] = array(
+    'title' => 'Status',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+   );
+
+  // Performance secondary (sub) tab.
+  $items['admin/reports/prod-monitor/site/%prod_monitor_perf/view/performance'] = array(
+    'title' => 'Performance',
     'description' => t('View the performance data for this site.'),
     'page callback' => 'prod_monitor_performance',
-    'page arguments' => array(3),
+    'page arguments' => array(4),
     'access callback' => 'user_access',
     'access arguments' => array('access production monitor'),
     'type' => MENU_LOCAL_TASK,
@@ -123,11 +133,12 @@ function prod_monitor_menu() {
     'weight' => 12,
   );
 
-  $items['admin/reports/prod-monitor/%prod_monitor/updates'] = array(
-    'title' => t('Updates'),
-    'description' => t('View the Production monitor modules update page.'),
+  // Updates secondary (sub) tab.
+  $items['admin/reports/prod-monitor/site/%prod_monitor/view/updates'] = array(
+    'title' => 'Updates',
+    'description' => 'View the Production monitor modules update page.',
     'page callback' => 'prod_monitor_updates',
-    'page arguments' => array(3),
+    'page arguments' => array(4),
     'access callback' => 'user_access',
     'access arguments' => array('access production monitor'),
     'type' => MENU_LOCAL_TASK,
@@ -135,22 +146,22 @@ function prod_monitor_menu() {
     'weight' => 15,
   );
 
-  $items['admin/reports/prod-monitor/%/update-check'] = array(
-    'title' => t('Updates'),
-    'description' => t('Refresh Production monitor modules update page.'),
+  $items['admin/reports/prod-monitor/site/%/update-check'] = array(
+    'title' => 'Updates',
+    'description' => 'Refresh Production monitor modules update page.',
     'page callback' => 'prod_monitor_updates_check',
-    'page arguments' => array(3),
+    'page arguments' => array(4),
     'access callback' => 'user_access',
     'access arguments' => array('access production monitor'),
     'type' => MENU_CALLBACK,
     'file' => 'includes/prod_monitor.admin.inc',
   );
 
-  $items['admin/reports/prod-monitor/%/edit'] = array(
-    'title' => t('Edit'),
-    'description' => t('Edit website'),
+  $items['admin/reports/prod-monitor/site/%/edit'] = array(
+    'title' => 'Edit',
+    'description' => 'Edit website',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('prod_monitor_overview_form', 3),
+    'page arguments' => array('prod_monitor_overview_form', 4),
     'access callback' => 'user_access',
     'access arguments' => array('access production monitor'),
     'type' => MENU_LOCAL_TASK,
@@ -158,11 +169,11 @@ function prod_monitor_menu() {
     'weight' => 20,
   );
 
-  $items['admin/reports/prod-monitor/%/flush'] = array(
-    'title' => t('Flush'),
-    'description' => t('Flush website\'s data.'),
+  $items['admin/reports/prod-monitor/site/%/flush'] = array(
+    'title' => 'Flush',
+    'description' => "Flush website's data.",
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('prod_monitor_flush_form', 3),
+    'page arguments' => array('prod_monitor_flush_form', 4),
     'access callback' => 'user_access',
     'access arguments' => array('access production monitor'),
     'type' => MENU_LOCAL_TASK,
@@ -170,11 +181,11 @@ function prod_monitor_menu() {
     'weight' => 30,
   );
 
-  $items['admin/reports/prod-monitor/%/fetch'] = array(
-    'title' => t('Fetch'),
-    'description' => t('Fetch website\'s data.'),
+  $items['admin/reports/prod-monitor/site/%/fetch'] = array(
+    'title' => 'Fetch',
+    'description' => "Fetch website's data.",
     'page callback' => 'prod_monitor_fetch_data',
-    'page arguments' => array(3),
+    'page arguments' => array(4),
     'access callback' => 'user_access',
     'access arguments' => array('access production monitor'),
     'type' => MENU_LOCAL_TASK,
@@ -182,11 +193,11 @@ function prod_monitor_menu() {
     'weight' => 35,
   );
 
-  $items['admin/reports/prod-monitor/%/delete'] = array(
-    'title' => t('Delete'),
-    'description' => t('Delete website'),
+  $items['admin/reports/prod-monitor/site/%/delete'] = array(
+    'title' => 'Delete',
+    'description' => 'Delete website',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('prod_monitor_delete_form', 3),
+    'page arguments' => array('prod_monitor_delete_form', 4),
     'access callback' => 'user_access',
     'access arguments' => array('access production monitor'),
     'type' => MENU_LOCAL_TASK,

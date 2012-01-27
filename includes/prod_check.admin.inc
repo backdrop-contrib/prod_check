@@ -175,7 +175,7 @@ function prod_check_settings_form($form, &$form_state) {
     $form['prod_check_xmlrpc']['xmlrpc']['prod_check_xmlrpc_key'] = array(
       '#type' => 'textfield',
       '#title' => t('API key'),
-      '#default_value' => variable_get('prod_check_xmlrpc_key', ''),
+      '#default_value' => variable_get('prod_check_xmlrpc_key', prod_check_generate_key()),
       '#maxlength' => 128,
       '#size' => 60,
       '#description' => t('Enter a key here to ensure secure transfer of data over the API. Use a mixture of alphanumeric and special characters for increased security.'),
@@ -201,84 +201,86 @@ function prod_check_settings_form($form, &$form_state) {
   }
 
   // Nagios settings.
-  $form['prod_check_nagios'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Nagios integration.'),
-    '#description' => t('You can set up integration with the !link module here.', prod_check_link_array('Nagios', 'http://drupal.org/project/nagios')),
-    '#collapsible' => FALSE,
-  );
-  $form['prod_check_nagios']['prod_check_enable_nagios'] = array(
-    '#type' => 'checkbox',
-    '#title' =>   t('Enable Nagios integration'),
-    '#description' => t('Tick this box if you want to enable integration with Nagios. The !link module is required for this to function.', array('!link' => l(t('Nagios'), 'http://drupal.org/project/nagios', array('attributes' => array('title' => t('Nagios')))))),
-    '#default_value' => variable_get('prod_check_enable_nagios', 0),
-    '#ajax' => array(
-      'callback' => 'prod_check_enable_nagios',
-      'wrapper' => 'prod-check-nagios',
-      'effect' => 'fade',
-    ),
-    '#required' => FALSE,
-  );
-
-  // The #value here is necessary for the markup field to be rendered :-(
-  $form['prod_check_nagios']['nagios'] = array(
-    '#type' => 'markup',
-    '#prefix' => '<div id="prod-check-nagios">',
-    '#suffix' => '</div>',
-  );
-  // Only show when the checkbox above is selected.
-  if (!isset($form_state['values']['prod_check_enable_nagios'])) {
-    $form_state['values']['prod_check_enable_nagios'] = variable_get('prod_check_enable_nagios', 0);
-  }
-  // TODO: find a way to detect when this is rendered so we can adjust the
-  // prod-check.js and apply equalheights/width
-  if ($form_state['values']['prod_check_enable_nagios']) {
-    $form['prod_check_nagios']['nagios']['settings'] = _prod_check_functions_as_form();
-    $options = variable_get('prod_check_nagios_checks', array());
-    if (!empty($options)) {
-      // Just to increase readability of the source here.
-      $monitor_settings = &$form['prod_check_nagios']['nagios']['settings']['prod_check_settings']['monitor_settings'];
-      // Set default values to last saved state
-      foreach (element_children($monitor_settings) as $set) {
-        if (isset($options[$set])) {
-          $monitor_settings[$set]['#default_value'] = $options[$set];
-        }
-        else {
-          // No settings available, so uncheck all.
-          $monitor_settings[$set]['#default_value'] = array();
+  if (module_exists('nagios')) {
+    $form['prod_check_nagios'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Nagios integration.'),
+      '#description' => t('You can set up integration with the !link module here.', prod_check_link_array('Nagios', 'http://drupal.org/project/nagios')),
+      '#collapsible' => FALSE,
+    );
+    $form['prod_check_nagios']['prod_check_enable_nagios'] = array(
+      '#type' => 'checkbox',
+      '#title' =>   t('Enable Nagios integration'),
+      '#description' => t('Tick this box if you want to enable integration with Nagios. The !link module is required for this to function.', array('!link' => l(t('Nagios'), 'http://drupal.org/project/nagios', array('attributes' => array('title' => t('Nagios')))))),
+      '#default_value' => variable_get('prod_check_enable_nagios', 0),
+      '#ajax' => array(
+        'callback' => 'prod_check_enable_nagios',
+        'wrapper' => 'prod-check-nagios',
+        'effect' => 'fade',
+      ),
+      '#required' => FALSE,
+    );
+  
+    // The #value here is necessary for the markup field to be rendered :-(
+    $form['prod_check_nagios']['nagios'] = array(
+      '#type' => 'markup',
+      '#prefix' => '<div id="prod-check-nagios">',
+      '#suffix' => '</div>',
+    );
+    // Only show when the checkbox above is selected.
+    if (!isset($form_state['values']['prod_check_enable_nagios'])) {
+      $form_state['values']['prod_check_enable_nagios'] = variable_get('prod_check_enable_nagios', 0);
+    }
+    // TODO: find a way to detect when this is rendered so we can adjust the
+    // prod-check.js and apply equalheights/width
+    if ($form_state['values']['prod_check_enable_nagios']) {
+      $form['prod_check_nagios']['nagios']['settings'] = _prod_check_functions_as_form();
+      $options = variable_get('prod_check_nagios_checks', array());
+      if (!empty($options)) {
+        // Just to increase readability of the source here.
+        $monitor_settings = &$form['prod_check_nagios']['nagios']['settings']['prod_check_settings']['monitor_settings'];
+        // Set default values to last saved state
+        foreach (element_children($monitor_settings) as $set) {
+          if (isset($options[$set])) {
+            $monitor_settings[$set]['#default_value'] = $options[$set];
+          }
+          else {
+            // No settings available, so uncheck all.
+            $monitor_settings[$set]['#default_value'] = array();
+          }
         }
       }
+  
+      $form['prod_check_nagios']['nagios']['settings']['prod_check_nagios_unique'] = array(
+        '#type' => 'select',
+        '#title' => t('When Nagios unique ID not recieved'),
+        '#description' => t('Select what should happen when the Nagios unique ID is not recieved by the nagios page.'),
+        '#options' => array(
+          'default' => t('default Nagios module behavior'),
+          '404' => t('throw a 404 error'),
+          'home' => t('redirect to homepege'),
+        ),
+        '#default_value' => variable_get('prod_check_nagios_unique', 'default'),
+        '#required' => FALSE,
+      );
+      $form['prod_check_nagios']['nagios']['settings']['prod_check_nagios_takeover'] = array(
+        '#markup' => '<p>' . t(
+          'If you want prod_check to take over the Nagios status page, you can edit the !settings and enter %callback. Only then will the setting above have any effect!',
+          array(
+            '!settings' => l(t('Nagios page callback'), 'admin/config/system/nagios'),
+            '%callback' => 'prod_check_nagios_status_page',
+          )
+        ) .'</p>',
+      );
+  
+      $form['prod_check_nagios']['nagios']['settings']['prod_check_nagios_verbose'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Show verbose status info'),
+        '#description' => t('Tick this box if you want to see detailed information about every check. Useful for debugging or first setup, but <strong>not recommended for production use!</strong>'),
+        '#default_value' => variable_get('prod_check_nagios_verbose', 0),
+        '#required' => FALSE,
+      );
     }
-
-    $form['prod_check_nagios']['nagios']['settings']['prod_check_nagios_unique'] = array(
-      '#type' => 'select',
-      '#title' => t('When Nagios unique ID not recieved'),
-      '#description' => t('Select what should happen when the Nagios unique ID is not recieved by the nagios page.'),
-      '#options' => array(
-        'default' => t('default Nagios module behavior'),
-        '404' => t('throw a 404 error'),
-        'home' => t('redirect to homepege'),
-      ),
-      '#default_value' => variable_get('prod_check_nagios_unique', 'default'),
-      '#required' => FALSE,
-    );
-    $form['prod_check_nagios']['nagios']['settings']['prod_check_nagios_takeover'] = array(
-      '#markup' => '<p>' . t(
-        'If you want prod_check to take over the Nagios status page, you can edit the !settings and enter %callback. Only then will the setting above have any effect!',
-        array(
-          '!settings' => l(t('Nagios page callback'), 'admin/config/system/nagios'),
-          '%callback' => 'prod_check_nagios_status_page',
-        )
-      ) .'</p>',
-    );
-
-    $form['prod_check_nagios']['nagios']['settings']['prod_check_nagios_verbose'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Show verbose status info'),
-      '#description' => t('Tick this box if you want to see detailed information about every check. Useful for debugging or first setup, but <strong>not recommended for production use!</strong>'),
-      '#default_value' => variable_get('prod_check_nagios_verbose', 0),
-      '#required' => FALSE,
-    );
   }
 
   // Submit buttons.
@@ -503,4 +505,18 @@ function prod_check_memcache() {
     print "No memcache servers found in settings.php.";
   }
   exit;
+}
+
+/**
+ * Generate default key if none is present.
+ */
+function prod_check_generate_key($length = 25) {
+  $chars = 'abcdefghijklmnopqrstuxyvwzABCDEFGHIJKLMNOPQRSTUXYVWZ+-*#&@!?';
+  $size = strlen($chars);
+  $key = '';
+  for ($i = 0; $i < $length; $i++) {
+    $key .= $chars[rand(0, $size - 1)];
+  }
+
+  return $key;
 }

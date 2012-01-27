@@ -321,24 +321,26 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
       }
 
       // Add performance logging section.
-      $form['sites']['prod_check_performance'] = array(
-        '#type' => 'fieldset',
-        '#title' => t("Configure which module's performance data you wish to log."),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-      );
-      $perf_options = array();
-      foreach ($performance['functions'] as $function => $title) {
-        $perf_options[$function] = t($title);
-      }
-      $form['sites']['prod_check_performance']['performance'] = array(
-        '#type' => 'checkboxes',
-        '#options' => $perf_options,
-        '#default_value' => array(),
-        '#description' => t('Indicate which performance data you want to store. This data can be provided by the modules listed here.'),
-      );
-      if ($edit && isset($perf_enabled)) {
-        $form['sites']['prod_check_performance']['performance']['#default_value'] = $perf_enabled;
+      if (!empty($performance['functions'])) {
+        $form['sites']['prod_check_performance'] = array(
+          '#type' => 'fieldset',
+          '#title' => t("Configure which module's performance data you wish to log."),
+          '#collapsible' => TRUE,
+          '#collapsed' => FALSE,
+        );
+        $perf_options = array();
+        foreach ($performance['functions'] as $function => $title) {
+          $perf_options[$function] = t($title);
+        }
+        $form['sites']['prod_check_performance']['performance'] = array(
+          '#type' => 'checkboxes',
+          '#options' => $perf_options,
+          '#default_value' => array(),
+          '#description' => t('Indicate which performance data you want to store. This data can be provided by the modules listed here.'),
+        );
+        if ($edit && isset($perf_enabled)) {
+          $form['sites']['prod_check_performance']['performance']['#default_value'] = $perf_enabled;
+        }
       }
 
       $form['sites']['fetch'] = array(
@@ -393,8 +395,8 @@ function _prod_monitor_overview_form_table($sites) {
     $view = t('View');
     $flush = t('Flush');
     if ($site_info['data']) {
-      $view = l(t('View'), 'admin/reports/prod-monitor/'.$id.'/view', array('attributes' => array('title' => t('View'))));
-      $flush = l(t('Flush'), 'admin/reports/prod-monitor/'.$id.'/flush', array('attributes' => array('title' => t('Flush'))));
+      $view = l(t('View'), 'admin/reports/prod-monitor/site/'.$id, array('attributes' => array('title' => t('View'))));
+      $flush = l(t('Flush'), 'admin/reports/prod-monitor/site/'.$id.'/flush', array('attributes' => array('title' => t('Flush'))));
     }
 
     $update_status = _prod_monitor_get_update_status($id);
@@ -402,7 +404,7 @@ function _prod_monitor_overview_form_table($sites) {
 
     if (!empty($site_info['status'])) {
       $title = t(ucwords($site_info['status']));
-      $status = array('data' => '<strong>'.l($title, 'admin/reports/prod-monitor/'.$id.'/view', array('attributes' => array('title' => $title, 'class' => $site_info['status']))).'</strong>', 'class' => array($site_info['status']));
+      $status = array('data' => '<strong>'.l($title, 'admin/reports/prod-monitor/site/'.$id, array('attributes' => array('title' => $title, 'class' => $site_info['status']))).'</strong>', 'class' => array($site_info['status']));
     }
     else {
       $status = '';
@@ -419,10 +421,10 @@ function _prod_monitor_overview_form_table($sites) {
         (!$site_info['lastupdate']) ? t('Not yet updated.') : $site_info['lastupdate'],
         /* Compose links. */
         $view,
-        l(t('Edit'), 'admin/reports/prod-monitor/'.$id.'/edit', array('query' => $home, 'attributes' => array('title' => t('Edit')))),
-        l(t('Fetch data'), 'admin/reports/prod-monitor/'.$id.'/fetch', array('attributes' => array('title' => t('Fetch & View')))),
+        l(t('Edit'), 'admin/reports/prod-monitor/site/'.$id.'/edit', array('query' => $home, 'attributes' => array('title' => t('Edit')))),
+        l(t('Fetch data'), 'admin/reports/prod-monitor/site/'.$id.'/fetch', array('attributes' => array('title' => t('Fetch & View')))),
         $flush,
-        l(t('Delete'), 'admin/reports/prod-monitor/'.$id.'/delete', array('attributes' => array('title' => t('Delete')))),
+        l(t('Delete'), 'admin/reports/prod-monitor/site/'.$id.'/delete', array('attributes' => array('title' => t('Delete')))),
       ),
       'class' => array($site_info['status']),
     );
@@ -484,10 +486,12 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
 
 
       // Get enabled performance logs.
-      $checks['perf_data'] = array();
-      foreach ($form_state['values']['performance'] as $value) {
-        if ($value) {
-          $checks['perf_data'][] = $value;
+      if (!empty($form_state['values']['performance'])) {
+        $checks['perf_data'] = array();
+        foreach ($form_state['values']['performance'] as $value) {
+          if ($value) {
+            $checks['perf_data'][] = $value;
+          }
         }
       }
 
@@ -507,7 +511,7 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
         if ($form_state['values']['fetch']) {
           $site_info = _prod_monitor_get_site($site->id, TRUE);
           _prod_monitor_retrieve_data($site->id, $site_info, TRUE);
-          drupal_goto('admin/reports/prod-monitor/'.$site->id.'/view');
+          drupal_goto('admin/reports/prod-monitor/site/'.$site->id);
         }
       }
       else {
@@ -523,7 +527,7 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
 function prod_monitor_fetch_data($id) {
   $site_info = _prod_monitor_get_site($id, TRUE);
   _prod_monitor_retrieve_data($id, $site_info, TRUE);
-  drupal_goto('admin/reports/prod-monitor/'.$id.'/view');
+  drupal_goto('admin/reports/prod-monitor/site/'.$id);
 }
 
 /**
