@@ -25,7 +25,9 @@ define('UPDATE_CURRENT', 5);
 define('UPDATE_NOT_CHECKED', -1);
 define('UPDATE_UNKNOWN', -2);
 define('UPDATE_NOT_FETCHED', -3);
+define('UPDATE_FETCH_PENDING', -4);
 define('UPDATE_MAX_FETCH_ATTEMPTS', 2);
+define('UPDATE_MAX_FETCH_TIME', 5);
 
 /**
  * Implementation of hook_help().
@@ -241,6 +243,10 @@ function prod_monitor_theme() {
   return array(
     'prod_monitor_update_report' => array(
       'variables' => array('id' => NULL, 'last' => NULL, 'data' => NULL),
+      'file' => 'includes/prod_monitor.theme.inc',
+    ),
+    'prod_monitor_update_status_label' => array(
+      'variables' => array('status' => NULL),
       'file' => 'includes/prod_monitor.theme.inc',
     ),
     'prod_monitor_update_version' => array(

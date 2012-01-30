@@ -1478,6 +1478,8 @@ function _prod_check_xmlsitemap($caller = 'internal') {
 
 // Module list
 function _prod_check_module_list($caller = 'internal') {
+  global $base_url;
+
   $check = array();
   $now = REQUEST_TIME;
   $last = variable_get('prod_check_module_list_lastrun', 0);
@@ -1500,12 +1502,18 @@ function _prod_check_module_list($caller = 'internal') {
         // (for one hour) but this function here ONLY gets called ONCE a week at
         // a very specific given time. Feel free to comment.
         $projects = array();
-        _prod_check_process_info_list($projects, system_get_module_data(), 'module');
-        _prod_check_process_info_list($projects, system_get_theme_data(), 'theme');
+        // Process enabled modules.
+        _prod_check_process_info_list($projects, system_rebuild_module_data(), 'module', TRUE);
+        _prod_check_process_info_list($projects, system_rebuild_theme_data(), 'theme', TRUE);
+        // TODO: add option to only check for ENABLED modules like the core's
+        // update module?
+        // Process disabled modules.
+        _prod_check_process_info_list($projects, system_rebuild_module_data(), 'module', FALSE);
+        _prod_check_process_info_list($projects, system_rebuild_theme_data(), 'theme', FALSE);
         // Allow other modules to alter projects before fetching and comparing.
         drupal_alter('update_projects', $projects);
         $check['prod_check_module_list']['projects'] = $projects;
-        $check['prod_check_module_list']['site_key'] = md5($base_url . drupal_get_private_key());
+        $check['prod_check_module_list']['site_key'] = drupal_hmac_base64($base_url, drupal_get_private_key());
         $check['prod_check_module_list']['last_update'] = $now;
 
         // Remember when we ran last.

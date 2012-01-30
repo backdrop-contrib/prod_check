@@ -97,7 +97,7 @@ function _prod_monitor_generate_updates_link($id, $update_status) {
         $title = t('Security risk!');
         break;
     }
-    $updates = array('data' => '<strong>'.l($title, 'admin/reports/prod-monitor/'.$id.'/updates', array('attributes' => array('title' => $title, 'class' => $class))).'</strong>', 'class' => $class);
+    $updates = array('data' => '<strong>'.l($title, 'admin/reports/prod-monitor/site/'.$id.'/view/updates', array('attributes' => array('title' => $title, 'class' => $class))).'</strong>', 'class' => $class);
   }
 
   return $updates;
@@ -147,12 +147,13 @@ function prod_monitor_updates($modules) {
                     'No information is available about potential new releases for currently installed modules and themes. To check for updates, you may need to !cron or you can !check. Please note that checking for available updates can take a long time, so please be patient.',
                     array(
                       '!cron' => l(t('run cron'), 'admin/reports/status/run-cron', array('attributes' => array('title' => t('run cron')), 'query' => $destination)),
-                      '!check' => l(t('check manually'), 'admin/reports/prod-monitor/'.$id.'/update-check', array('attributes' => array('title' => t('check manually')))),
+                      '!check' => l(t('check manually'), 'admin/reports/prod-monitor/site/'.$id.'/update-check', array('attributes' => array('title' => t('check manually')))),
                     )
                   )
       )
     );
   }
+
   return $output;
 }
 
@@ -176,7 +177,7 @@ function prod_monitor_updates_check($id) {
   else {
     drupal_set_message(t('No module data available: cannot check for updates!'), 'error');
   }
-  drupal_goto('admin/reports/prod-monitor/'.$id.'/updates');
+  drupal_goto('admin/reports/prod-monitor/site/'.$id.'/view/updates');
 }
 
 /**

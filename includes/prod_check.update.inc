@@ -23,34 +23,63 @@
 
 
 /**
- * Taken from Core: modules/update/update.compare.inc, line 53
+ * Taken from Core: modules/update/update.compare.inc, line 81
  *
  * Populate an array of project data.
+ *
+ * This iterates over a list of the installed modules or themes and groups
+ * them by project and status. A few parts of this function assume that
+ * enabled modules and themes are always processed first, and if disabled
+ * modules or themes are being processed (there is a setting to control if
+ * disabled code should be included in the Available updates report or not),
+ * those are only processed after $projects has been populated with
+ * information about the enabled code. 'Hidden' modules and themes are always
+ * ignored. This function also records the latest change time on the .info
+ * files for each module or theme, which is important data which is used when
+ * deciding if the cached available update data should be invalidated.
+ *
+ * @param $projects
+ *   Reference to the array of project data of what's installed on this site.
+ * @param $list
+ *   Array of data to process to add the relevant info to the $projects array.
+ * @param $project_type
+ *   The kind of data in the list (can be 'module' or 'theme').
+ * @param $status
+ *   Boolean that controls what status (enabled or disabled) to process out of
+ *   the $list and add to the $projects array.
+ *
+ * @see update_get_projects()
  */
-function _prod_check_process_info_list(&$projects, $list, $project_type) {
+function _prod_check_process_info_list(&$projects, $list, $project_type, $status) {
   foreach ($list as $file) {
     // A disabled base theme of an enabled sub-theme still has all of its code
     // run by the sub-theme, so we include it in our "enabled" projects list.
-    if (!$file->status && !empty($file->sub_themes)) {
+    if ($status && !$file->status && !empty($file->sub_themes)) {
       foreach ($file->sub_themes as $key => $name) {
         // Build a list of enabled sub-themes.
         if ($list[$key]->status) {
           $file->enabled_sub_themes[$key] = $name;
         }
       }
-      // If there are no enabled subthemes, we should ingore this theme and go
-      // on to the next one.
+      // If there are no enabled subthemes, we should ignore this base theme
+      // for the enabled case. If the site is trying to display disabled
+      // themes, we'll catch it then.
       if (empty($file->enabled_sub_themes)) {
         continue;
       }
     }
-    elseif (empty($file->status)) {
-      // Skip disabled modules or themes.
+    // Otherwise, just add projects of the proper status to our list.
+    elseif ($file->status != $status) {
       continue;
     }
 
     // Skip if the .info file is broken.
     if (empty($file->info)) {
+      continue;
+    }
+
+    // Skip if it's a hidden module or theme.
+    if (!empty($file->info['hidden'])) {
       continue;
     }
 
@@ -72,7 +101,7 @@ function _prod_check_process_info_list(&$projects, $list, $project_type) {
     // which is left alone by tar and correctly set to the time the .info file
     // was unpacked.
     if (!isset($file->info['_info_file_ctime'])) {
-      $info_filename = dirname($file->filename) .'/'. $file->name .'.info';
+      $info_filename = dirname($file->uri) . '/' . $file->name . '.info';
       $file->info['_info_file_ctime'] = filectime($info_filename);
     }
 
@@ -82,6 +111,22 @@ function _prod_check_process_info_list(&$projects, $list, $project_type) {
 
     $project_name = $file->info['project'];
 
+    // Figure out what project type we're going to use to display this module
+    // or theme. If the project name is 'drupal', we don't want it to show up
+    // under the usual "Modules" section, we put it at a special "Drupal Core"
+    // section at the top of the report.
+    if ($project_name == 'drupal') {
+      $project_display_type = 'core';
+    }
+    else {
+      $project_display_type = $project_type;
+    }
+    if (empty($status) && empty($file->enabled_sub_themes)) {
+      // If we're processing disabled modules or themes, append a suffix.
+      // However, we don't do this to a a base theme with enabled
+      // subthemes, since we treat that case as if it is enabled.
+      $project_display_type .= '-disabled';
+    }
     // Add a list of sub-themes that "depend on" the project and a list of base
     // themes that are "required by" the project.
     if ($project_name == 'drupal') {
@@ -95,7 +140,6 @@ function _prod_check_process_info_list(&$projects, $list, $project_type) {
       // Add list of base themes.
       $base_themes = !empty($file->base_themes) ? $file->base_themes : array();
     }
-
     if (!isset($projects[$project_name])) {
       // Only process this if we haven't done this project, since a single
       // project can have multiple modules or themes.
@@ -106,23 +150,41 @@ function _prod_check_process_info_list(&$projects, $list, $project_type) {
         'info' => _prod_check_filter_project_info($file->info),
         'datestamp' => $file->info['datestamp'],
         'includes' => array($file->name => $file->info['name']),
-        'project_type' => $project_name == 'drupal' ? 'core' : $project_type,
+        'project_type' => $project_display_type,
+        'project_status' => $status,
         'sub_themes' => $sub_themes,
         'base_themes' => $base_themes,
       );
     }
-    else {
+    elseif ($projects[$project_name]['project_type'] == $project_display_type) {
+      // Only add the file we're processing to the 'includes' array for this
+      // project if it is of the same type and status (which is encoded in the
+      // $project_display_type). This prevents listing all the disabled
+      // modules included with an enabled project if we happen to be checking
+      // for disabled modules, too.
       $projects[$project_name]['includes'][$file->name] = $file->info['name'];
       $projects[$project_name]['info']['_info_file_ctime'] = max($projects[$project_name]['info']['_info_file_ctime'], $file->info['_info_file_ctime']);
       $projects[$project_name]['datestamp'] = max($projects[$project_name]['datestamp'], $file->info['datestamp']);
-      $projects[$project_name]['sub_themes'] = array_merge($projects[$project_name]['sub_themes'], $sub_themes);
-      $projects[$project_name]['base_themes'] = array_merge($projects[$project_name]['base_themes'], $base_themes);
+      if (!empty($sub_themes)) {
+        $projects[$project_name]['sub_themes'] += $sub_themes;
+      }
+      if (!empty($base_themes)) {
+        $projects[$project_name]['base_themes'] += $base_themes;
+      }
+    }
+    elseif (empty($status)) {
+      // If we have a project_name that matches, but the project_display_type
+      // does not, it means we're processing a disabled module or theme that
+      // belongs to a project that has some enabled code. In this case, we add
+      // the disabled thing into a separate array for separate display.
+      $projects[$project_name]['disabled'][$file->name] = $file->info['name'];
     }
   }
 }
 
+
 /**
- * Taken from Core: modules/update/update.compare.inc, line 153
+ * Taken from Core: modules/update/update.compare.inc, line 238
  *
  * Given a $file object (as returned by system_get_files_database()), figure
  * out what project it belongs to.
@@ -134,12 +196,7 @@ function _prod_check_get_project_name($file) {
   if (isset($file->info['project'])) {
     $project_name = $file->info['project'];
   }
-  elseif (isset($file->info['package']) && (strpos($file->info['package'], 'Core -') !== FALSE)) {
-    $project_name = 'drupal';
-  }
-  elseif (in_array($file->name, array('bluemarine', 'chameleon', 'garland', 'marvin', 'minnelli', 'pushbutton'))) {
-    // Unfortunately, there's no way to tell if a theme is part of core,
-    // so we must hard-code a list here.
+  elseif (isset($file->info['package']) && (strpos($file->info['package'], 'Core') === 0)) {
     $project_name = 'drupal';
   }
   return $project_name;
@@ -169,11 +226,5 @@ function _prod_check_filter_project_info($info) {
     'project status url',
     'version',
   );
-  $whitelist = array_flip($whitelist);
-  foreach ($info as $key => $value) {
-    if (!isset($whitelist[$key])) {
-      unset($info[$key]);
-    }
-  }
-  return $info;
+  return array_intersect_key($info, drupal_map_assoc($whitelist));
 }
