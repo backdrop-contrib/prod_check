@@ -21,7 +21,7 @@ $protocol = 'http://';
 if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
   $protocol = 'https://';
 }
-define('PRODCHECK_BASEURL', $protocol.$_SERVER['SERVER_NAME'].'/');
+define('PRODCHECK_BASEURL', $protocol.$_SERVER['HTTP_HOST'].'/');
 
 /**
  * Implementation of hook_help().
