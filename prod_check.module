@@ -118,9 +118,21 @@ function prod_check_menu() {
 }
 
 /**
+ * Implementation of hook_flush_caches()
+ */
+function prod_check_flush_caches() {
+  // We set this variable to a negative value to allow for immediate refetching
+  // of the module update data when update.php was run.
+  if (defined('MAINTENANCE_MODE') && MAINTENANCE_MODE == 'update') {
+    variable_set('prod_check_module_list_lastrun', -1);
+  }
+
+  return array();
+}
+
+/**
  * Implementation of hook_theme()
  */
-
 function prod_check_theme($existing, $type, $theme, $path) {
   return array(
     'prod_check_status_report' => array(
@@ -1487,8 +1499,9 @@ function _prod_check_module_list($caller = 'internal') {
   // The if() is split up this way for full perfomance: we only run once a week,
   // so on 6 out of 7 days, we won't pass the first if statement.
 
-  // First check if we are scheduled to run this day of the week.
-  if (variable_get('prod_check_module_list_day', 0) == date('w', $now)){
+  // First check if we are scheduled to run this day of the week. See
+  // prod_check_flush_caches() for the -1 case.
+  if (variable_get('prod_check_module_list_day', 0) == date('w', $now) || $last = -1){
     // First check if we already ran today.
     if (date('Ymd', $last) != date('Ymd', $now)) {
       $time = explode(':', variable_get('prod_check_module_list_time', '03:00'));
