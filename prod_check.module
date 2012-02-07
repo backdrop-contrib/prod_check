@@ -1501,7 +1501,7 @@ function _prod_check_module_list($caller = 'internal') {
 
   // First check if we are scheduled to run this day of the week. See
   // prod_check_flush_caches() for the -1 case.
-  if (variable_get('prod_check_module_list_day', 0) == date('w', $now) || $last = -1){
+  if (variable_get('prod_check_module_list_day', 0) == date('w', $now) || $last == -1){
     // First check if we already ran today.
     if (date('Ymd', $last) != date('Ymd', $now)) {
       $time = explode(':', variable_get('prod_check_module_list_time', '03:00'));
