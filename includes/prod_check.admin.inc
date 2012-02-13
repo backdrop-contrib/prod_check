@@ -198,6 +198,20 @@ function prod_check_settings_form($form, &$form_state) {
       '#description' => t('Defines what time (HH:MM) the module list will be fetchable by Production monitor for an update status check.'),
       '#required' => FALSE,
     );
+    // See http://drupal.org/node/1058896#comment-5594076 .
+    if (variable_get('prod_check_module_list_lastrun', 0) != -1) {
+      $form['prod_check_xmlrpc']['xmlrpc']['reset'] = array(
+        '#prefix' => '<div class="clear">',
+        '#type' => 'submit',
+        '#value' => t('Force immediate module list reporting'),
+        '#postfix' => '</div>',
+      );
+    }
+    else {
+      $form['prod_check_xmlrpc']['xmlrpc']['reset'] = array(
+        '#markup' => '<div class="description clear">' . t('Production monitor will fetch the module list on next cron run or when manually invoked for this site!') . '</div>',
+      );
+    }
   }
 
   // Nagios settings.
@@ -419,9 +433,16 @@ function prod_check_settings_form_validate($form, &$form_state) {
 
 /**
  * Submit for settings form.
+ *
+ * TODO: is it better to split all of these in separate functions and use
+ * buttons with the #submit property? The latter is better readability wise I
+ * guess.
  */
 function prod_check_settings_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
+    case t('Force immediate module list reporting'):
+      variable_set('prod_check_module_list_lastrun', -1);
+      break;
     case t('Save configuration'):
       variable_set('prod_check_sitemail', $form_state['values']['prod_check_sitemail']);
       // APC.

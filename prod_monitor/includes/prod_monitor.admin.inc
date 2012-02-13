@@ -14,11 +14,13 @@ function prod_monitor_status($id) {
 
   // General status block
   $modules = _prod_monitor_get_site_modules($id);
-  if(!empty($modules)) {
+  if(!empty($modules) && isset($site['data']['prod_mon'])) {
     $prod_mon = $site['data']['prod_mon'];
     $output .= _prod_monitor_status_general($prod_mon, $modules);
   }
   unset($site['data']['prod_mon']);
+  // Performance data not needed here.
+  unset($site['data']['perf_data']);
 
   // Display results of all checks.
   foreach ($functions as $set => $data) {

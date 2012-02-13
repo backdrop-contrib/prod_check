@@ -65,7 +65,7 @@ function prod_monitor_schema() {
         'sitekey' => array(
           'description' => 'The unique key for the site.',
           'type' => 'varchar',
-          'length' => 32,
+          'length' => 128,
           'not null' => TRUE,
           'default' => '',
         ),
@@ -274,4 +274,23 @@ function prod_monitor_update_7101(&$sandbox) {
 function prod_monitor_update_7102() {
   $schema = prod_monitor_schema();
   db_create_table('prod_monitor_site_performance', $schema['prod_monitor_site_performance']);
+}
+
+/**
+ * Update sitekey field in database to allow longer D7 values.
+ */
+function prod_check_update_7103() {
+  // Note http://drupal.org/node/150220 about not using hook_schema() here!
+  db_change_field(
+    'prod_monitor_site_modules',
+    'sitekey',
+    'sitekey',
+    array(
+      'description' => 'The unique key for the site.',
+      'type' => 'varchar',
+      'length' => 128,
+      'not null' => TRUE,
+      'default' => '',
+    )
+  );
 }
