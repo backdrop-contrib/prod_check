@@ -405,7 +405,7 @@ function prod_check_execute_check($checks, $caller, $compatibility = 'all') {
             break;
           case 'nagios':
             $result[$checks[$key]['#nagios_key']] = array(
-              'status' => $checks[$key]['#severity'], 
+              'status' => $checks[$key]['#severity'],
               'type'   => $checks[$key]['#nagios_type'],
               'text'   => strip_tags($checks[$key]['#description_nok']),
             );
@@ -426,7 +426,7 @@ function prod_check_execute_check($checks, $caller, $compatibility = 'all') {
             break;
           case 'nagios':
             $result[$checks[$key]['#nagios_key']]  = array(
-              'status' => NAGIOS_STATUS_OK, 
+              'status' => NAGIOS_STATUS_OK,
               'type'   => $checks[$key]['#nagios_type'],
               'text'   => strip_tags($checks[$key]['#description_ok']),
             );
@@ -1065,8 +1065,15 @@ function _prod_check_node_available($caller = 'internal') {
       $secure = TRUE;
       break;
     default:
-      $msg = t('The default /node page created by Drupal core is still enabled. With improper setup of node types, this can reveal sensitive information (e.g. using the profile module with automatic publish to front activiated)!');
-      $secure = FALSE;
+      $frontpage = variable_get('site_frontpage', '');
+      if (!empty($frontpage) && $frontpage != 'node') {
+        $msg = t('The default /node page created by Drupal core is still enabled. With improper setup of node types, this can reveal sensitive information (e.g. using the profile module with automatic publish to front activated)!');
+        $secure = FALSE;
+      }
+      else {
+        // Using /node as default frontpage.
+        $secure = TRUE;
+      }
   }
 
   $check['prod_check_node_available'] = array(
@@ -1258,7 +1265,7 @@ function _prod_check_search_config($caller = 'internal') {
     if($check_anonymous_search_all == 1) {
       $error = TRUE;
       $msg_nok = t('You have enabled the !link module, but anonymous users can search every content type!', prod_check_link_array($title, $path, $fragment));
-    } 
+    }
     else {
       $error = FALSE;
       $str_anonymous_content = implode(', ', $check_anonymous_content_types);
