@@ -146,6 +146,11 @@ function prod_check_theme($existing, $type, $theme, $path) {
  * Custom callback to override /nagios page.
  */
 function prod_check_nagios_status_page() {
+  // Make sure this page is not cached.
+  drupal_page_is_cacheable(FALSE);
+  header("Pragma: no-cache");
+  header("Expires: 0");
+
   if ($_SERVER['HTTP_USER_AGENT'] != variable_get('nagios_ua', 'Nagios')) {
     switch (variable_get('prod_check_nagios_unique', 'default')) {
       case '404': drupal_not_found();
