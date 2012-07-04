@@ -816,10 +816,11 @@ function _prod_check_page_cache($caller = 'internal') {
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title, $path),
-    '#description_nok' => t('Your !link settings are disabled. You should at least set page caching to "Cache pages for anonymous users" on a production site! You should also consider using the !boost module!',
+    '#description_nok' => t('Your !link settings are disabled. You should at least set page caching to "Cache pages for anonymous users" on a production site! You should also consider using the !boost module or a more powerful system like !varnish!',
       array(
         '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())).'</em>',
         '!boost' => '<em>'.l(t('Boost'), 'http://drupal.org/project/boost', array('attributes' => array('title' => t('Boost')))).'</em>',
+        '!varnish' => '<em>'.l(t('Varnish'), 'http://drupal.org/project/steroids', array('attributes' => array('title' => t('Varnish')))).'</em>',
       )
     ),
     '#nagios_key' => 'PCACHE',

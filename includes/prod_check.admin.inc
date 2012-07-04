@@ -136,7 +136,7 @@ function prod_check_settings_form($form, &$form_state) {
   // Memcache password.
   $form['prod_check_memcache']['prod_check_memcachepass'] = array(
     '#type' => 'password_confirm',
-    '#title' => t('APC advanced features password'),
+    '#title' => t('Memcache password'),
     '#size' => 60,
     '#description' => t('The password for logging in to the Memcache settings page.'),
     '#required' => FALSE,
