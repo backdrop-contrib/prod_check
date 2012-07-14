@@ -538,6 +538,7 @@ function _prod_check_functions() {
     'functions' => array(
       '_prod_check_update_status' => 'Update status',
       '_prod_check_devel' => 'Devel',
+      '_prod_check_webform' =>  'Webform',
     ),
   );
   if (module_exists('search')) {
@@ -662,12 +663,13 @@ function _prod_check_site_mail($caller = 'internal') {
   }
 
   $site_mail = variable_get('site_mail', '');
+  $arguments = array('%mail' => $site_mail);
   $check['prod_check_site_mail'] = array(
     '#title' => t($title),
     '#state' => $site_mail != '' && !preg_match('/'.variable_get('prod_check_sitemail', '').'/i', $site_mail),
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
-    '#value_ok'  => t('Global site e-mail address OK: %mail', array('%mail' => $site_mail)),
-    '#value_nok'  => t('Global site e-mail address set to %mail', array('%mail' => $site_mail)),
+    '#value_ok'  => t('Global site e-mail address OK: %mail', $arguments),
+    '#value_nok'  => t('Global site e-mail address set to %mail', $arguments),
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('The !link address of the website should not be a development address on production sites!', prod_check_link_array($title, $path)),
     '#nagios_key' => 'MAIL',
@@ -1297,6 +1299,33 @@ function _prod_check_search_config($caller = 'internal') {
     '#description_ok'  => $msg_ok,
     '#description_nok' => $msg_nok,
     '#nagios_key' => 'SRCH',
+    '#nagios_type' => 'state',
+  );
+
+  return prod_check_execute_check($check, $caller);
+}
+
+// Webform
+function _prod_check_webform($caller = 'internal') {
+  $check = array();
+
+  $title = 'Webform';
+  $path = 'admin/config/content/webform';
+  if ($caller != 'internal') {
+    $path = PRODCHECK_BASEURL . $path;
+  }
+
+  $webform_mail = variable_get('webform_default_from_address', variable_get('site_mail', ini_get('sendmail_from')));
+  $arguments = array('!webform' => $title, '%mail' => $webform_mail);
+  $check['prod_check_webform'] = array(
+    '#title' => t($title),
+    '#state' => $webform_mail != '' && !preg_match('/'.variable_get('prod_check_sitemail', '').'/i', $webform_mail),
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
+    '#value_ok'  => t('!webform default e-mail address OK: %mail', $arguments),
+    '#value_nok'  => t('!webform default e-mail address set to %mail', $arguments),
+    '#description_ok'  => prod_check_ok_title($title, $path),
+    '#description_nok' => t('The !link default e-mail address should not be a development address on production sites!', prod_check_link_array($title, $path)),
+    '#nagios_key' => 'WFRM',
     '#nagios_type' => 'state',
   );
 

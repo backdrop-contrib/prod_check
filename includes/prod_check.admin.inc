@@ -74,7 +74,7 @@ function prod_check_settings_form($form, &$form_state) {
     '#title' => t('Sitemail check'),
     '#default_value' => variable_get('prod_check_sitemail', ''),
     '#size' => 60,
-    '#description' => t('Enter (part of) the e-mail address you always use in the !link when developing a website. This is used in a regular expression in the "Site e-mail" check.', prod_check_link_array('site-information settings', 'admin/settings/site-information')),
+    '#description' => t('Enter (part of) the e-mail address you always use in the !link when developing a website. This is used in a regular expression in the "Site e-mail" and Webform module check.', prod_check_link_array('site-information settings', 'admin/settings/site-information')),
     '#required' => FALSE,
   );
 
@@ -416,7 +416,7 @@ function prod_check_settings_form_validate($form, &$form_state) {
     form_set_error('prod_check_apc_expunge', t('Cache full count threshold should be numeric!'));
   }
 
-  if ($form_state['values']['prod_check_enable_nagios']) {
+  if (isset($form_state['values']['prod_check_enable_nagios']) && $form_state['values']['prod_check_enable_nagios']) {
     $checks = array();
     foreach ($form_state['values']['monitor_settings'] as $set => $data) {
       foreach ($data as $check => $value) {
@@ -474,7 +474,7 @@ function prod_check_settings_form_submit($form, &$form_state) {
         variable_set('prod_check_enable_xmlrpc', 0);
       }
       // This is why we didn't use a system_settings_form().
-      if ($form_state['values']['prod_check_enable_nagios']) {
+      if (isset($form_state['values']['prod_check_enable_nagios']) && $form_state['values']['prod_check_enable_nagios']) {
         $checks = array();
         foreach ($form_state['values']['monitor_settings'] as $set => $data) {
           foreach ($data as $check => $value) {
