@@ -290,6 +290,21 @@ A colour coded table will be printed. The information is limited to the name of
 the check and the status. In the Drupal version of the status page, you have an
 extra line explaining more about the curent status of a specific check.
 
+You can easily make your site 'production ready' by using the following command:
+
+  $ drush prod-check-prodmode
+
+or its alias:
+
+  $ drush pchk-pmode
+
+This will fix most of the problems reported in the status page. You can have
+some extra control on the process by adding the --config option:
+
+  $ drush pchk-pmode --config
+
+This will ask for some input before setting up the site.
+
 For Production monitor, these commands are available:
 
   $ drush prod-monitor [id]

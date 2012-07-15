@@ -487,7 +487,6 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
         }
       }
 
-
       // Get enabled performance logs.
       if (!empty($form_state['values']['performance'])) {
         $checks['perf_data'] = array();

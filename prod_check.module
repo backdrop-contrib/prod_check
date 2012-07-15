@@ -26,7 +26,6 @@ define('PRODCHECK_BASEURL', $protocol.$_SERVER['HTTP_HOST'].'/');
 /**
  * Implementation of hook_help().
  */
-
 function prod_check_help($path, $arg) {
   $output = '';
   switch ($path) {
@@ -36,6 +35,7 @@ function prod_check_help($path, $arg) {
       $output .= '<p>'.t('If you prefer using <strong>!link</strong> for monitoring, you can simply enable support for that on the settings page by ticking the appropriate checkmark. An extra set of checkboxes will appear, allowing you to configure in detail what exactly you wish !link to monitor.', prod_check_link_array('Nagios', 'http://drupal.org/project/nagios')).'</p>';
       break;
     case 'admin/reports/prod-check':
+    case 'admin/reports/prod-check/status':
       $output .= '<p>'.t('This is an overview of all checks performed by the <em>Production check</em> module and their status. You can click the links inside the report to jump to the module\'s settings page, or to go to the project page of a module, in case you need to download it for installation.').'</p>';
       break;
     case 'admin/config/system/prod-check':
@@ -83,6 +83,25 @@ function prod_check_menu() {
     'access arguments' => array('access production check'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/prod_check.admin.inc',
+  );
+
+  // Default tab (callback for this is it's parent path).
+  $items['admin/reports/prod-check/status'] = array(
+    'title' => 'Status',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+   );
+
+  $items['admin/reports/prod-check/prod-mode'] = array(
+    'title' => 'Production mode',
+    'description' => 'Setup this site so it is ready for production.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('prod_check_prod_mode_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('access production check'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/prod_check.admin.inc',
+    'weight' => 1,
   );
 
   $items['admin/config/system/prod-check'] = array(
@@ -591,23 +610,23 @@ function _prod_check_error_reporting($caller = 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  $setting[0] = t('None');
-  $setting[1] = t('Errors and warnings');
-  $setting[2] = t('All messages');
+  $setting[ERROR_REPORTING_HIDE] = t('None');
+  $setting[ERROR_REPORTING_DISPLAY_SOME] = t('Errors and warnings');
+  $setting[ERROR_REPORTING_DISPLAY_ALL] = t('All messages');
 
-  $current = variable_get('error_level', 2);
+  $current = variable_get('error_level', ERROR_REPORTING_DISPLAY_ALL);
   $check['prod_check_error_reporting'] = array(
     '#title' => t($title),
-    '#state' => $current == 0,
+    '#state' => $current == ERROR_REPORTING_HIDE,
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
-    '#value_ok'  => $setting[0],
+    '#value_ok'  => $setting[ERROR_REPORTING_HIDE],
     '#value_nok'  => $setting[$current],
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are set to %setting1, they should be set to %setting2 on a producion environment!',
       array(
         '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())).'</em>',
         '%setting1' => $setting[$current],
-        '%setting2' => $setting[0],
+        '%setting2' => $setting[ERROR_REPORTING_HIDE],
       )
     ),
     '#nagios_key' => 'ERR',
@@ -626,23 +645,23 @@ function _prod_check_user_register($caller = 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  $setting[0] = t('Administrators only');
-  $setting[1] = t('Visitors');
-  $setting[2] = t('Visitors, but administrator approval is required');
+  $setting[USER_REGISTER_ADMINISTRATORS_ONLY] = t('Administrators only');
+  $setting[USER_REGISTER_VISITORS] = t('Visitors');
+  $setting[USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL] = t('Visitors, but administrator approval is required');
 
   $current = variable_get('user_register', 1);
   $check['prod_check_user_register'] = array(
     '#title' => t($title),
-    '#state' => $current != 1,
+    '#state' => $current != USER_REGISTER_VISITORS,
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => $setting[$current],
-    '#value_nok'  => $setting[1],
+    '#value_nok'  => $setting[USER_REGISTER_VISITORS],
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are set to %setting1. Are you sure this is what you want and did not mean to use %setting2? With improperly setup access rights, this can be dangerous...',
       array(
         '!link' => '<em>'.l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())).'</em>',
         '%setting1' => $setting[$current],
-        '%setting2' => $setting[2],
+        '%setting2' => $setting[USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL],
       )
     ),
     '#nagios_key' => 'USR',
@@ -769,7 +788,6 @@ function _prod_check_release_notes($caller = 'internal') {
       $error = TRUE;
     }
   }
-  $str_remaining_files = implode(', ', $remaining_files);
 
   $check['prod_check_release_notes'] = array(
     '#title' => t($title),
@@ -779,7 +797,7 @@ function _prod_check_release_notes($caller = 'internal') {
     '#value_nok'  => t('Release note & help files still present on your server!'),
     '#description_ok'  => t('Status is OK for production use.'),
     '#description_nok' => t('Leaving the "!files" files present on the webserver is a minor security risk. These files are useless on production anyway and they simply should not be there.', array(
-      '!files' => $str_remaining_files
+      '!files' => implode(', ', $remaining_files)
       )
     ),
     '#nagios_key' => 'REL',
@@ -851,7 +869,7 @@ function _prod_check_page_compression($caller = 'internal') {
   if (variable_get('page_compression', 0) == 0) {
     $status = FALSE;
     // When using Varnish, turning off page compression is a good thing!
-    if (module_exists('varnish')) {
+    if (module_exists('varnish') || module_exists('steroids')) {
       $status = TRUE;
     }
   }
@@ -1321,10 +1339,10 @@ function _prod_check_webform($caller = 'internal') {
     '#title' => t($title),
     '#state' => $webform_mail != '' && !preg_match('/'.variable_get('prod_check_sitemail', '').'/i', $webform_mail),
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
-    '#value_ok'  => t('!webform default e-mail address OK: %mail', $arguments),
-    '#value_nok'  => t('!webform default e-mail address set to %mail', $arguments),
+    '#value_ok'  => t('!webform default from e-mail address OK: %mail', $arguments),
+    '#value_nok'  => t('!webform default from e-mail address set to %mail', $arguments),
     '#description_ok'  => prod_check_ok_title($title, $path),
-    '#description_nok' => t('The !link default e-mail address should not be a development address on production sites!', prod_check_link_array($title, $path)),
+    '#description_nok' => t('The !link default from e-mail address should not be a development address on production sites!', prod_check_link_array($title, $path)),
     '#nagios_key' => 'WFRM',
     '#nagios_type' => 'state',
   );

@@ -81,8 +81,7 @@ function prod_check_settings_form($form, &$form_state) {
   $form['prod_check_apc'] = array(
     '#type' => 'fieldset',
     '#title' => t('Advanced APC settings'),
-    '#description' => t(
-        'These settings are used in the !link functionality.', prod_check_link_array('advanced APC', 'admin/reports/status/apc')),
+    '#description' => t('These settings are used in the !link functionality.', prod_check_link_array('advanced APC', 'admin/reports/status/apc')),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -234,7 +233,7 @@ function prod_check_settings_form($form, &$form_state) {
       ),
       '#required' => FALSE,
     );
-  
+
     // The #value here is necessary for the markup field to be rendered :-(
     $form['prod_check_nagios']['nagios'] = array(
       '#type' => 'markup',
@@ -264,7 +263,7 @@ function prod_check_settings_form($form, &$form_state) {
           }
         }
       }
-  
+
       $form['prod_check_nagios']['nagios']['settings']['prod_check_nagios_unique'] = array(
         '#type' => 'select',
         '#title' => t('When Nagios unique ID not recieved'),
@@ -505,6 +504,226 @@ function prod_check_settings_form_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Setup site for production mode.
+ */
+function prod_check_prod_mode_form() {
+  drupal_set_title(t('Switch to production mode'));
+
+  $form = array();
+
+  // Put this in hook_help() first but some themes hide the help text. It's too
+  // important to be hidden, so moved it here.
+  $form['help'] = array(
+    '#markup' => '<p>' . t('Submitting this form will switch this website to <em>production mode</em>. This means that various settings will be adjusted in order to fix most of the problems reported on the status page. <strong>Some modules will be disabled as well!</strong>') . '</p>',
+  );
+
+  $form['site_mail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Site e-mail address'),
+    '#description' => t('This field is optional and will be used to setup the default e-mail address of this site. <strong>Currently set to %mail.</strong>', array('%mail' => variable_get('site_mail', '[not set]'))),
+  );
+
+  if (module_exists('webform')) {
+    $form['webform_default_from_address'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Webform default from e-mail address'),
+      '#description' => t('This field is optional and will be used to setup the default from e-mail address for <em>Webform</em>. <strong>Currently set to %mail.</strong>', array('%mail' => variable_get('webform_default_from_address', '[not set]'))),
+    );
+  }
+
+  if (module_exists('googleanalytics')) {
+    $form['googleanalytics_account'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Google Analytics Web Property ID'),
+      '#description' => t('This field is optional and will be used to setup the <em>Google Analytics</em> account. <strong>Currently set to %account.</strong>', array('%account' => variable_get('googleanalytics_account', '[not set]'))),
+    );
+  }
+
+  $form['block_cache'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable <em>Block cache</em>'),
+    '#description' => t("If ticked, this will enable block caching. <strong>This can cause unwanted results if custom blocks don't handle caching well!</strong>"),
+  );
+
+  if (module_exists('dblog')) {
+    $form['dblog'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Disable <em>Database logging</em>'),
+      '#description' => t('If ticked, this will disable the <em>dblog</em> module wich could generate too much overhead on high traffic sites.'),
+    );
+  }
+
+  $form['nagios'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable <em>Nagios</em>'),
+    '#description' => t('If ticked, this will enable the <em>Nagios</em> monitoring module if it is present.'),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Enable production mode'),
+  );
+
+  return $form;
+}
+
+/**
+ * Setup site for production mode: validation.
+ */
+function prod_check_prod_mode_form_validate($form, &$form_state) {
+  $checks = array('site_mail', 'webform_default_from_address');
+
+  foreach ($checks as $field) {
+    if (!empty($form_state['values'][$field])) {
+      if (!valid_email_address($form_state['values'][$field])) {
+        form_set_error($field, t('The e-mail address %mail is not valid.', array('%mail' => $form_state['values'][$field])));
+      }
+    }
+  }
+
+  // Google analytics.
+  if (!empty($form_state['values']['googleanalytics_account'])) {
+    if (!preg_match('/^UA-\d{4,}-\d+$/', $form_state['values']['googleanalytics_account'])) {
+      form_set_error('googleanalytics_account', t('A valid Google Analytics Web Property ID is case sensitive and formatted like UA-xxxxxxx-yy.'));
+    }
+  }
+}
+
+// TODO: add confirm form here? In the form of:
+// The following actions will be performed: [...] Are you sure you want to
+// continue?
+
+/**
+ * Setup site for production mode: submit.
+ */
+function prod_check_prod_mode_form_submit($form, &$form_state) {
+  // Adjust settings.
+  $variables = prod_check_prod_mode_settings($form_state['values']);
+  drupal_set_message(t('The following settings have been changed: %variables.', array('%variables' => implode(', ', array_keys($variables)))));
+
+  // Enable / disable modules.
+  $modules = prod_check_prod_mode_modules($form_state['values']);
+  if (!empty($modules['disable'])) {
+    drupal_set_message(t('The following modules have been <strong>disabled</strong>: %modules.', array('%modules' => implode(', ', $modules['disable']))));
+  }
+  if (!empty($modules['enable'])) {
+    drupal_set_message(t('The following modules have been <strong>enabled</strong>: %modules.', array('%modules' => implode(', ', $modules['enable']))));
+  }
+
+  $form_state['redirect'] = 'admin/reports/prod-check';
+}
+
+/**
+ * Helper function to adjust settings. Also used by Drush.
+ */
+function prod_check_prod_mode_settings($options) {
+  $variables = array(
+    // Error messages to display.
+    'error_level' => ERROR_REPORTING_HIDE,
+    // Cache pages for anonymous users.
+    'cache' => 1,
+    // Aggregate and compress CSS files.
+    'preprocess_css' => 1,
+    // Aggregate JavaScript files.
+    'preprocess_js' => 1,
+  );
+
+  // No page compression when running Varnish.
+  if (!module_exists('varnish') && !module_exists('steroids')) {
+    // Compress cached pages.
+    $variables['page_compression'] = 1;
+  }
+
+  // Site e-mail address.
+  if (isset($options['site_mail']) && !empty($options['site_mail'])) {
+    $variables['site_mail'] = $options['site_mail'];
+  }
+
+  // Webform default from e-mail address.
+  if (isset($options['webform_default_from_address']) && !empty($options['webform_default_from_address'])) {
+    $variables['webform_default_from_address'] = $options['webform_default_from_address'];
+  }
+
+  // Google analytics account.
+  if (isset($options['googleanalytics_account']) && !empty($options['googleanalytics_account'])) {
+    $variables['googleanalytics_account'] = $options['googleanalytics_account'];
+  }
+
+  // Cache blocks.
+  if (isset($options['block_cache']) && !empty($options['block_cache'])) {
+    $variables['block_cache'] = 1;
+  }
+
+  // Set variables. Wanted to do this in one query, but that was impossible due
+  // to the fact that it is possible a variable does not exist in the database
+  // yet and still have a value. Damn that default value in variable_get()!
+  foreach ($variables as $variable => $value) {
+    variable_set($variable, $value);
+  }
+
+  // Clear caches like the system_performance_settings() form does.
+  drupal_clear_css_cache();
+  drupal_clear_js_cache();
+  // Instead of calling system_clear_page_cache_submit()
+  cache_clear_all('*', 'cache_page', TRUE);
+
+  return $variables;
+}
+
+/**
+ * Helper function to enable / disable modules. Also used by Drush.
+ */
+function prod_check_prod_mode_modules($options) {
+  $modules['disable'] = array(
+    'devel',
+    'devel_generate',
+    'devel_node_access',
+    'devel_themer',
+    'update',
+  );
+
+  if (isset($options['dblog']) && $options['dblog']) {
+    $modules['disable'][] = 'dblog';
+  }
+
+  // We do this primarily to prepare feedback to the user. module_disable() will
+  // do a module_exists() check as well but only provides feedback using
+  // watchdog().
+  foreach ($modules['disable'] as $id => $module) {
+    if (!module_exists($module)) {
+      unset($modules['disable'][$id]);
+    }
+  }
+
+  if (!empty($modules['disable'])) {
+    module_disable($modules['disable']);
+  }
+
+  $modules['enable'] = array();
+
+  if ($options['nagios']) {
+    $modules['enable'][] = 'nagios';
+  }
+
+  // We cannot check if a module is available on the file system. At least,
+  // there is not a function in Drupal that I know of to do this and I could not
+  // find one. Hence this approach, until there's a better way.
+  if (!empty($modules['enable'])) {
+    module_enable($modules['enable']);
+    foreach($modules['enable'] as $id => $module) {
+      if (!module_exists($module)) {
+        unset($modules['enable'][$id]);
+      }
+    }
+  }
+
+  return $modules;
+}
+
+/**
+ * Integration of the APC status page.
+ */
 function prod_check_apc() {
   define('ADMIN_USERNAME', variable_get('prod_check_apcuser', 'apc'));
   define('ADMIN_PASSWORD', variable_get('prod_check_apcpass', 'password'));
@@ -512,6 +731,9 @@ function prod_check_apc() {
   exit;
 }
 
+/**
+ * Integration of the Memcache status page.
+ */
 function prod_check_memcache() {
   global $conf;
 
