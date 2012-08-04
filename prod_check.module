@@ -253,13 +253,9 @@ function prod_check_get_data($ping_key, $checks) {
     foreach ($checks as $set => $calls) {
       $data[$set] = array();
       foreach ($calls as $key => $function) {
-        // We add this check to allow for the following case:
-        //  1. 3rd party module implements hook_prod_check_alter()
-        //  2. settings are adjusted to include reporting for this function
-        //  3. 3rd party module is disabled / removed
-        //  4. settings still contain this function to be executed
-        if (function_exists($function)) {
-          $data[$set] = array_merge($data[$set], $function('xmlrpc'));
+        $check = call_user_func($function, 'xmlrpc');
+        if (!empty($check)) {
+          $data[$set] = array_merge($data[$set], $check);
         }
       }
     }
@@ -311,13 +307,9 @@ function prod_check_nagios() {
     foreach ($checks as $set => $calls) {
       // TODO: add check on $set here. Single out 'perf_data' and treat differently.
       foreach ($calls as $key => $function) {
-        // We add this check to allow for the following case:
-        //  1. 3rd party module implements hook_prod_check_alter()
-        //  2. settings are adjusted to include reporting for this function
-        //  3. 3rd party module is disabled / removed
-        //  4. settings still contain this function to be executed
-        if (function_exists($function)) {
-          $status = array_merge($status, $function('nagios'));
+        $check = call_user_func($function, 'nagios');
+        if (!empty($check)) {
+          $status = array_merge($status, $check);
         }
       }
     }
@@ -555,14 +547,13 @@ function _prod_check_functions() {
     'title' => 'Modules',
     'description' => 'Checks if certain modules are on or off and if they\'re properly configured.',
     'functions' => array(
-      '_prod_check_update_status' => 'Update status',
+      '_prod_check_contact' => 'Contact',
       '_prod_check_devel' => 'Devel',
+      '_prod_check_search_config' => 'Search config',
+      '_prod_check_update_status' => 'Update status',
       '_prod_check_webform' =>  'Webform',
     ),
   );
-  if (module_exists('search')) {
-    $functions['modules']['functions']['_prod_check_search_config'] = 'Search config';
-  }
 
   // SEO
   $functions['seo'] = array(
@@ -685,7 +676,7 @@ function _prod_check_site_mail($caller = 'internal') {
   $arguments = array('%mail' => $site_mail);
   $check['prod_check_site_mail'] = array(
     '#title' => t($title),
-    '#state' => $site_mail != '' && !preg_match('/'.variable_get('prod_check_sitemail', '').'/i', $site_mail),
+    '#state' => $site_mail != '' && !preg_match('/' . preg_quote(variable_get('prod_check_sitemail', '')) . '/i', $site_mail),
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
     '#value_ok'  => t('Global site e-mail address OK: %mail', $arguments),
     '#value_nok'  => t('Global site e-mail address set to %mail', $arguments),
@@ -1188,25 +1179,47 @@ function _prod_check_anonymous_rights($caller = 'internal') {
 
 // --- MODULES ---
 
-// Update status
-function _prod_check_update_status($caller = 'internal') {
-  $check = array();
+// Contact
+function _prod_check_contact($caller = 'internal') {
+  if (!module_exists('contact')) {
+    return;
+  }
 
-  $title = 'Update status';
-  $path = 'admin/reports/updates';
+  $check = array();
+  $error = FALSE;
+
+  $title = 'Contact';
+  $path = 'admin/structure/contact';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  $check['prod_check_update_status'] = array(
+  // Check all mails in the contact table.
+  $prod_check_sitemail = preg_quote(variable_get('prod_check_sitemail', ''));
+  $categories = array();
+  $result = db_select('contact', 'c')
+    ->fields('c', array('category', 'recipients'))
+    ->execute();
+  foreach ($result as $row) {
+    $recipients = explode(',', $row->recipients);
+    foreach ($recipients as $mail) {
+      if (preg_match('/' . $prod_check_sitemail . '/i', $mail)) {
+        $categories[] = $row->category . ': ' . $mail;
+        $error = TRUE;
+      }
+    }
+  }
+
+  $arguments = array('!contact' => $title, '%categories' => implode(', ', $categories));
+  $check['prod_check_contact'] = array(
     '#title' => t($title),
-    '#state' => !module_exists('update'),
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
-    '#value_ok'  => t('Disabled'),
-    '#value_nok'  => t('Enabled'),
-    '#description_ok'  => t('Your settings are OK for production use.'),
-    '#description_nok' => t('You have enabled the !link module. It would be better to turn this off on production, contrary to what Drupal core claims, and keep it running on development. Updating and testing should happen on development before deploying to production anyway.', prod_check_link_array($title, $path)),
-    '#nagios_key' => 'UPD',
+    '#state' => !$error,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
+    '#value_ok'  => t('!contact e-mail addresses are OK.', $arguments),
+    '#value_nok'  => t('!contact e-mail addresses are %categories', $arguments),
+    '#description_ok'  => prod_check_ok_title($title, $path),
+    '#description_nok' => t('The !link recepient e-mail addresses should not be development addresses on production sites!', prod_check_link_array($title, $path)),
+    '#nagios_key' => 'WFRM',
     '#nagios_type' => 'state',
   );
 
@@ -1266,6 +1279,10 @@ function _prod_check_devel($caller = 'internal') {
 
 // Search config
 function _prod_check_search_config($caller = 'internal') {
+  if (!module_exists('search')) {
+    return;
+  }
+
   $check = array();
   $error = FALSE;
 
@@ -1323,8 +1340,37 @@ function _prod_check_search_config($caller = 'internal') {
   return prod_check_execute_check($check, $caller);
 }
 
+// Update status
+function _prod_check_update_status($caller = 'internal') {
+  $check = array();
+
+  $title = 'Update status';
+  $path = 'admin/reports/updates';
+  if ($caller != 'internal') {
+    $path = PRODCHECK_BASEURL . $path;
+  }
+
+  $check['prod_check_update_status'] = array(
+    '#title' => t($title),
+    '#state' => !module_exists('update'),
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
+    '#value_ok'  => t('Disabled'),
+    '#value_nok'  => t('Enabled'),
+    '#description_ok'  => t('Your settings are OK for production use.'),
+    '#description_nok' => t('You have enabled the !link module. It would be better to turn this off on production, contrary to what Drupal core claims, and keep it running on development. Updating and testing should happen on development before deploying to production anyway.', prod_check_link_array($title, $path)),
+    '#nagios_key' => 'UPD',
+    '#nagios_type' => 'state',
+  );
+
+  return prod_check_execute_check($check, $caller);
+}
+
 // Webform
 function _prod_check_webform($caller = 'internal') {
+  if (!module_exists('webform')) {
+    return;
+  }
+
   $check = array();
 
   $title = 'Webform';
@@ -1337,7 +1383,7 @@ function _prod_check_webform($caller = 'internal') {
   $arguments = array('!webform' => $title, '%mail' => $webform_mail);
   $check['prod_check_webform'] = array(
     '#title' => t($title),
-    '#state' => $webform_mail != '' && !preg_match('/'.variable_get('prod_check_sitemail', '').'/i', $webform_mail),
+    '#state' => $webform_mail != '' && !preg_match('/' . preg_quote(variable_get('prod_check_sitemail', '')) . '/i', $webform_mail),
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
     '#value_ok'  => t('!webform default from e-mail address OK: %mail', $arguments),
     '#value_nok'  => t('!webform default from e-mail address set to %mail', $arguments),

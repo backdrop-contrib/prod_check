@@ -41,10 +41,8 @@ function drush_prod_check_statuspage() {
     $rows[] = array('');
     $rows[] = array("\033[1m".dt($data['title'])."\033[0m");
     foreach ($data['functions'] as $function => $title) {
-      $func = $function;
-      // $func() will execute the function with the name we composed above.
-      $result = $func();
-      $func = ltrim($func, '_');
+      $result = call_user_func($function);
+      $func = ltrim($function, '_');
       if (!empty($result)) {
         $rows[] = array(
           $result[$func]['title'],

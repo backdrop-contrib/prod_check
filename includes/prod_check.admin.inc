@@ -18,10 +18,9 @@ function prod_check_status() {
   foreach ($functions as $set => $data) {
     $result = array();
     foreach ($data['functions'] as $function => $title) {
-      // We add this check to prevent breaking the whole page if some module
-      // messes up with hook_prod_check_alter().
-      if (function_exists($function)) {
-        $result = array_merge($result, $function());
+      $check = call_user_func($function);
+      if (!empty($check)) {
+        $result = array_merge($result, $check);
       }
     }
     $output .= '<h2>' . t($data['title']) . '</h2>' . "\n";
@@ -71,10 +70,10 @@ function prod_check_settings_form($form, &$form_state) {
   );
   $form['prod_check_general']['prod_check_sitemail'] = array(
     '#type' => 'textfield',
-    '#title' => t('Sitemail check'),
+    '#title' => t('Mail check'),
     '#default_value' => variable_get('prod_check_sitemail', ''),
     '#size' => 60,
-    '#description' => t('Enter (part of) the e-mail address you always use in the !link when developing a website. This is used in a regular expression in the "Site e-mail" and Webform module check.', prod_check_link_array('site-information settings', 'admin/settings/site-information')),
+    '#description' => t('Enter (part of) the e-mail address you always <strong>use when developing</strong> a website. This is used in a regular expression in the "Site e-mail", Contact and Webform modules check.'),
     '#required' => FALSE,
   );
 
