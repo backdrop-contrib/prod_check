@@ -497,8 +497,12 @@ function prod_check_settings_form_submit($form, &$form_state) {
     case t('Reset to defaults'):
       // This beats multiple variable_del() calls.
       // Don't delete prod_check_module_list_lastrun!
-      db_query('DELETE FROM {variable} WHERE name LIKE "prod_check_%" AND name <> "prod_check_module_list_lastrun"');
-      cache_clear_all('variables', 'cache');
+      // DELETE FROM {variable} WHERE name LIKE "prod_check\_%" AND name <> "prod_check_module_list_lastrun"'
+      db_delete('variable')
+        ->condition('name', 'prod_check\_%', 'LIKE')
+        ->condition('name', 'prod_check_module_list_lastrun', '<>')
+        ->execute();
+      cache_clear_all('variables', 'cache_bootstrap');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }
