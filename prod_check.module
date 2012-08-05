@@ -1160,7 +1160,7 @@ function _prod_check_anonymous_rights($caller = 'internal') {
   $perms = db_query('SELECT permission FROM {role_permission} WHERE rid = 1')->fetchCol();
   $perms = implode(', ', $perms);
 
-  if (preg_match('/(access\sall|add|administer|change|clear|create|delete|edit|revert|save|send\smail|set\svariable|update|upload|PHP|devel)/i', $perms)) {
+  if (preg_match('/(\baccess\sall\b|\badd\b|\badminister\b|\bchange\b|\bclear\b|\bcreate\b|\bdelete\b|\bedit\b|\brevert\b|\bsave\b|\bsend\smail\b|\bset\svariable\b|\bupdate\b|\bupload\b|\bPHP\b|\bdevel\b)/i', $perms)) {
     $secure = FALSE;
   }
   $check['prod_check_anonymous_rights'] = array(
