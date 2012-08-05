@@ -301,8 +301,8 @@ function prod_check_nagios_info() {
  * Implementation of hook_nagios()
  */
 function prod_check_nagios() {
+  $status = array();
   if (variable_get('prod_check_enable_nagios', 0)) {
-    $status = array();
     $checks = variable_get('prod_check_nagios_checks', array());
     foreach ($checks as $set => $calls) {
       // TODO: add check on $set here. Single out 'perf_data' and treat differently.
@@ -382,9 +382,10 @@ function prod_check_nagios() {
         'text' => t($message, array('@ok' => $nagios['OK']['count'], '@unknown' => $nagios['Unknown']['count'], '@warning' => $nagios['Warning']['count'], '@critical' => $nagios['CRITICAL']['count'])),
       );
     }
-
-    return $status;
   }
+
+  // Keep this outside of the if to avoid PHP notices on the nagios status page.
+  return $status;
 }
 
 /**
