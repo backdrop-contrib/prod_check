@@ -254,7 +254,7 @@ function prod_check_get_data($ping_key, $checks) {
       $data[$set] = array();
       foreach ($calls as $key => $function) {
         $check = call_user_func($function, 'xmlrpc');
-        if (!empty($check)) {
+        if (is_array($check) && !empty($check)) {
           $data[$set] = array_merge($data[$set], $check);
         }
       }
@@ -308,7 +308,7 @@ function prod_check_nagios() {
       // TODO: add check on $set here. Single out 'perf_data' and treat differently.
       foreach ($calls as $key => $function) {
         $check = call_user_func($function, 'nagios');
-        if (!empty($check)) {
+        if (is_array($check) && !empty($check)) {
           $status = array_merge($status, $check);
         }
       }

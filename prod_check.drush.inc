@@ -37,13 +37,18 @@ function drush_prod_check_statuspage() {
   );
   $error = 0;
 
-  foreach (_prod_check_functions() as $set => $data) {
+  $functions = _prod_check_functions();
+  // Not needed here.
+  unset($functions['prod_mon']);
+  unset($functions['perf_data']);
+
+  foreach ($functions as $set => $data) {
     $rows[] = array('');
     $rows[] = array("\033[1m".dt($data['title'])."\033[0m");
     foreach ($data['functions'] as $function => $title) {
       $result = call_user_func($function);
       $func = ltrim($function, '_');
-      if (!empty($result)) {
+      if (is_array($result) && !empty($result)) {
         $rows[] = array(
           $result[$func]['title'],
           "\033[".$severity[$result[$func]['severity']].'m'.strip_tags($result[$func]['value'])."\033[0m",

@@ -11,15 +11,15 @@ function prod_check_status() {
   // Execute all functions per set as defined in the functions array in
   // _prod_check_functions().
   $functions = _prod_check_functions();
-  unset($functions['prod_mon']);
   // Not needed here.
+  unset($functions['prod_mon']);
   unset($functions['perf_data']);
 
   foreach ($functions as $set => $data) {
     $result = array();
     foreach ($data['functions'] as $function => $title) {
       $check = call_user_func($function);
-      if (!empty($check)) {
+      if (is_array($check) && !empty($check)) {
         $result = array_merge($result, $check);
       }
     }
