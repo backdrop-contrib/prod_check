@@ -514,6 +514,7 @@ function _prod_check_functions() {
     'description' => 'Checks certain server side parameters such as APC.',
     'functions' => array(
       '_prod_check_apc' => 'APC',
+      '_prod_check_dblog_php' => 'PHP errors',
       '_prod_check_release_notes' => 'Release notes',
     ),
   );
@@ -742,6 +743,54 @@ function _prod_check_apc($caller = 'internal') {
     '#description_ok'  => $desc_ok,
     '#description_nok' => $desc_nok,
     '#nagios_key' => 'APC',
+    '#nagios_type' => 'state',
+  );
+
+  return prod_check_execute_check($check, $caller);
+}
+
+// PHP errors
+function _prod_check_dblog_php($caller = 'internal') {
+  if (!module_exists('dblog')) {
+    return;
+  }
+
+  $check = array();
+  $title = 'PHP errors';
+  $path = 'admin/reports/dblog';
+  if ($caller != 'internal') {
+    $path = PRODCHECK_BASEURL . $path;
+  }
+
+  $error = FALSE;
+  $error_level = variable_get('prod_check_dblog_php', WATCHDOG_WARNING);
+
+  $result = db_select('watchdog', 'w')
+    ->fields('w', array('wid'))
+    ->condition('type', 'php')
+    ->condition('severity', $error_level, '<=')
+    ->countQuery()
+    ->execute()
+    ->fetchField();
+
+  if ($result) {
+    $error = TRUE;
+  }
+
+  $check['prod_check_dblog_php'] = array(
+    '#title' => t($title),
+    '#state' => !$error,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
+    '#value_ok'  => t('No PHP errors reported.'),
+    '#value_nok'  => t('PHP errors reported!'),
+    '#description_ok'  => t('Status is OK for production use.'),
+    '#description_nok' => format_plural(
+      $result,
+      '@count PHP error has been reported! Check the !link for details!',
+      '@count PHP errors have been reported! Check the !link for details!',
+      prod_check_link_array('watchdog log', $path)
+    ),
+    '#nagios_key' => 'PHP',
     '#nagios_type' => 'state',
   );
 
@@ -1220,7 +1269,7 @@ function _prod_check_contact($caller = 'internal') {
     '#value_nok'  => t('!contact e-mail addresses are %categories', $arguments),
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('The !link recepient e-mail addresses should not be development addresses on production sites!', prod_check_link_array($title, $path)),
-    '#nagios_key' => 'WFRM',
+    '#nagios_key' => 'CNT',
     '#nagios_type' => 'state',
   );
 

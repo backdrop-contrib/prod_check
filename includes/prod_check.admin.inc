@@ -76,6 +76,16 @@ function prod_check_settings_form($form, &$form_state) {
     '#description' => t('Enter (part of) the e-mail address you always <strong>use when developing</strong> a website. This is used in a regular expression in the "Site e-mail", Contact and Webform modules check.'),
     '#required' => FALSE,
   );
+  if (module_exists('dblog')) {
+    $form['prod_check_general']['prod_check_dblog_php'] = array(
+      '#type' => 'select',
+      '#title' => t('Minimal watchdog severity for PHP errors'),
+      '#default_value' => variable_get('prod_check_dblog_php', WATCHDOG_WARNING),
+      '#options' => watchdog_severity_levels(),
+      '#description' => t('Select the severity level from which to start reporting PHP errors being logged to the watchdog table.'),
+      '#required' => FALSE,
+    );
+  }
 
   $form['prod_check_apc'] = array(
     '#type' => 'fieldset',
@@ -443,6 +453,8 @@ function prod_check_settings_form_submit($form, &$form_state) {
       break;
     case t('Save configuration'):
       variable_set('prod_check_sitemail', $form_state['values']['prod_check_sitemail']);
+      // PHP errors.
+      variable_set('prod_check_dblog_php', $form_state['values']['prod_check_dblog_php']);
       // APC.
       variable_set('prod_check_apc_expunge', $form_state['values']['prod_check_apc_expunge']);
       variable_set('prod_check_apcuser', $form_state['values']['prod_check_apcuser']);
