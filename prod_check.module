@@ -1,6 +1,13 @@
 <?php
 
 /**
+ * Because of http://drupal.org/node/1067802 and the 'fuzzyness' about the issue
+ * db_query() is preferred over db_select() inside all of the checks defined in
+ * _prod_check_functions()! prod_check needs to be as fast and less intrusive as
+ * possible!
+ */
+
+/**
  * Our own definition of the core requirements states. These can be found in
  * includes/install.inc and are only available in hook_install(). That's why
  * we redefine them here (yes, it's double!). It's nicer than including the
@@ -764,14 +771,16 @@ function _prod_check_dblog_php($caller = 'internal') {
 
   $error = FALSE;
   $error_level = variable_get('prod_check_dblog_php', WATCHDOG_WARNING);
+  $threshold = variable_get('prod_check_dblog_php_threshold', 1);
 
-  $result = db_select('watchdog', 'w')
-    ->fields('w', array('wid'))
-    ->condition('type', 'php')
-    ->condition('severity', $error_level, '<=')
-    ->countQuery()
-    ->execute()
-    ->fetchField();
+  $result = db_query(
+    'SELECT COUNT(*) FROM (SELECT count(wid) FROM {watchdog} WHERE type = :type AND severity <= :severity GROUP BY variables HAVING COUNT(wid) >= :threshold) subquery',
+    array(
+      ':type' => 'php',
+      ':severity' => $error_level,
+      ':threshold' => $threshold,
+    )
+  )->fetchField();
 
   if ($result) {
     $error = TRUE;
@@ -786,9 +795,12 @@ function _prod_check_dblog_php($caller = 'internal') {
     '#description_ok'  => t('Status is OK for production use.'),
     '#description_nok' => format_plural(
       $result,
-      '@count PHP error has been reported! Check the !link for details!',
-      '@count PHP errors have been reported! Check the !link for details!',
-      prod_check_link_array('watchdog log', $path)
+      '@count PHP error occuring more than !threshold time(s) has been reported! Check the !link for details!',
+      '@count PHP errors occuring more than !threshold time(s) have been reported! Check the !link for details!',
+      array(
+        '!link' => implode(prod_check_link_array($title, $path)),
+        '!threshold' => $threshold,
+      )
     ),
     '#nagios_key' => 'PHP',
     '#nagios_type' => 'state',
@@ -1247,9 +1259,7 @@ function _prod_check_contact($caller = 'internal') {
   // Check all mails in the contact table.
   $prod_check_sitemail = preg_quote(variable_get('prod_check_sitemail', ''));
   $categories = array();
-  $result = db_select('contact', 'c')
-    ->fields('c', array('category', 'recipients'))
-    ->execute();
+  $result = db_query('SELECT category, recipients FROM {contact}');
   foreach ($result as $row) {
     $recipients = explode(',', $row->recipients);
     foreach ($recipients as $mail) {
