@@ -603,7 +603,7 @@ function prod_monitor_delete_form_submit($form, &$form_state) {
       drupal_set_message(t('Unable to delete %url!', array('%url' => $form_state['values']['url'])), 'error');
     }
   }
-  drupal_goto('admin/reports/prod-monitor');
+  $form_state['redirect'] = 'admin/reports/prod-monitor';
 }
 
 function _prod_monitor_update_data_form($form, $form_state, $id, $site_info) {
