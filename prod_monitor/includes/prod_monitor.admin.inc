@@ -513,7 +513,7 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
         if ($form_state['values']['fetch']) {
           $site_info = _prod_monitor_get_site($site->id, TRUE);
           _prod_monitor_retrieve_data($site->id, $site_info, TRUE);
-          drupal_goto('admin/reports/prod-monitor/site/'.$site->id);
+          $form_state['redirect'] = 'admin/reports/prod-monitor/site/'.$site->id;
         }
       }
       else {
@@ -566,7 +566,7 @@ function prod_monitor_flush_form_submit($form, &$form_state) {
       drupal_set_message(t('Stored data for %url successfully flushed.', array('%url' => $form_state['values']['url'])));
     }
   }
-  drupal_goto('admin/reports/prod-monitor');
+  $form_state['redirect'] = 'admin/reports/prod-monitor';
 }
 
 /**
