@@ -548,6 +548,7 @@ function _prod_check_functions() {
       '_prod_check_node_available' => 'Is /node available?',
       /*'_prod_check_user_pass' => 'User passwords',*/
       '_prod_check_anonymous_rights' => 'Anonymous user rights',
+      '_prod_check_admin_username' => 'Is user 1 named "admin"?'
     ),
   );
 
@@ -1235,6 +1236,61 @@ function _prod_check_anonymous_rights($caller = 'internal') {
     '#nagios_key' => 'ANON',
     '#nagios_type' => 'state',
   );
+
+  return prod_check_execute_check($check, $caller);
+}
+
+/**
+ * Simple check to ensure the admin username is not easily guessable by a robot.
+ */
+function _prod_check_admin_username($caller = 'internal') {
+  global $base_url;
+
+  $check = array();
+  $title = "Administrator's username (User 1)";
+  $secure = TRUE;
+  $superuser = user_load(1);
+
+  // By default severity and description are for the less severe case which is
+  // overridden when the username is actually still just the default "admin".
+  $severity = ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING;
+  $description_nok = t('Ideally the admin username should not contain the word "admin" or any part of the current domain. The current admin username is %name.', array('%name' => $superuser->name));
+
+  // Determine if part of the current domain is in the admin username.
+  $parsed_base = parse_url($base_url);
+  $host_parts = explode('.', $parsed_base['host']);
+  $name_contains_host_part = FALSE;
+  foreach($host_parts as $part) {
+    if (stripos($superuser->name, $part) !== FALSE) {
+      $name_contains_host_part = TRUE;
+    }
+  }
+
+  // The username contains "admin".
+  if (stripos($superuser->name, 'admin') !== FALSE
+    // Or the current domain.
+    || $name_contains_host_part) {
+      $secure = FALSE;
+  }
+
+  // It is very bad if the admin still has the default username.
+  if ($superuser->name == 'admin') {
+    $secure = FALSE;
+    $severity = ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR;
+    $description_nok = t('The admin user seems to have the default username "admin". This is both extremely easy for a robot to guess and extremely bad if said robot subsequently guesses the admin password. Please change the admin username, ideally to something that does not contain the word "admin" or any part of the current domain.');
+  }
+
+  $check['prod_check_admin_username'] = array(
+    '#title' => t($title),
+    '#state' => $secure,
+    '#severity' => $severity,
+    '#value_ok' => t('Secure'),
+    '#value_nok' => t('Security risk!'),
+    '#description_ok' => t('No security risk found.'),
+    '#description_nok' => $description_nok,
+    '#nagios_key' => 'ADMINUN',
+    '#nagios_type' => 'state',
+    );
 
   return prod_check_execute_check($check, $caller);
 }
