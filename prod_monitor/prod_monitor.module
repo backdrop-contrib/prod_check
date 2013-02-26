@@ -103,7 +103,7 @@ function prod_monitor_menu() {
     'page arguments' => array(4),
     'access callback' => 'user_access',
     'access arguments' => array('access production monitor'),
-    'type' => MENU_CALLBACK,
+    'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/prod_monitor.admin.inc',
     'weight' => 10,
   );
