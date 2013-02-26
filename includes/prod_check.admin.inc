@@ -131,33 +131,6 @@ function prod_check_settings_form($form, &$form_state) {
     '#required' => FALSE,
   );
 
-  $form['prod_check_memcache'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Memcache settings'),
-    '#description' => t(
-      'These settings are used in the !link functionality.', prod_check_link_array('memcache', 'admin/reports/status/memcache')),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-
-  // Memcache user.
-  $form['prod_check_memcache']['prod_check_memcacheuser'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Memcache username'),
-    '#default_value' => variable_get('prod_check_memcacheuser', 'memcache'),
-    '#size' => 60,
-    '#description' => t('The username for logging in to the Memcache settings page.'),
-    '#required' => FALSE,
-  );
-  // Memcache password.
-  $form['prod_check_memcache']['prod_check_memcachepass'] = array(
-    '#type' => 'password_confirm',
-    '#title' => t('Memcache password'),
-    '#size' => 60,
-    '#description' => t('The password for logging in to the Memcache settings page.'),
-    '#required' => FALSE,
-  );
-
   // XMLRPC settings.
   $form['prod_check_xmlrpc'] = array(
     '#type' => 'fieldset',
@@ -302,7 +275,7 @@ function prod_check_settings_form($form, &$form_state) {
           )
         ) .'</p>',
       );
-  
+
       $form['prod_check_nagios']['nagios']['settings']['prod_check_nagios_verbose'] = array(
         '#type' => 'checkbox',
         '#title' => t('Show verbose status info'),
@@ -767,15 +740,13 @@ function prod_check_apc() {
 function prod_check_memcache() {
   global $conf;
 
-  define('ADMIN_USERNAME', variable_get('prod_check_memcacheuser', 'memcache'));
-  define('ADMIN_PASSWORD', variable_get('prod_check_memcachepass', 'password'));
   if (isset($conf['memcache_servers'])) {
     global $MEMCACHE_SERVERS;
     $MEMCACHE_SERVERS = array_keys($conf['memcache_servers']);
-    include(drupal_get_path('module', 'prod_check').'/includes/prod_check.memcache.inc');
+    include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.memcache.inc');
   }
   else {
-    print "No memcache servers found in settings.php.";
+    print 'No memcache servers found in settings.php.';
   }
   exit;
 }

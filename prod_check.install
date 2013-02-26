@@ -22,7 +22,7 @@ function prod_check_uninstall() {
  */
 function prod_check_requirements($phase) {
   $requirements = array();
-  
+
   switch ($phase) {
     case 'runtime':
       $sitemail = variable_get('prod_check_sitemail', '');
@@ -73,5 +73,16 @@ function prod_check_update_7100() {
     variable_set('prod_check_nagios_checks', $checks);
     return t('Successfully updated prod_check_nagios_checks settings.');
   }
+
   return t('No prod_check_nagios_checks found that needed an update.');
+}
+
+/**
+ * Remove obsolete memcache settings.
+ */
+function prod_check_update_7101() {
+  variable_del('prod_check_memcacheuser');
+  variable_del('prod_check_memcachepass');
+
+  return t('Obsolete memcache settings removed.');
 }
