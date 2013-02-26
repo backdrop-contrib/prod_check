@@ -227,10 +227,13 @@ function prod_monitor_load($id) {
  * Implementation of hook_load()
  */
 function prod_monitor_perf_load($id) {
+  $data = array();
+  $data['id'] = $id;
+
   // Get performance data.
-  $data = _prod_monitor_get_performance_data($id);
+  $data['data'] = _prod_monitor_get_performance_data($id);
   // Hide tab if no module data found.
-  if (empty($data)) {
+  if (empty($data['data'])) {
     return FALSE;
   }
   return $data;
@@ -559,7 +562,7 @@ function _prod_monitor_get_site($id, $all = FALSE) {
   }
   else {
     $site = db_query("SELECT * FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAssoc();
-  } 
+  }
 
   if (!empty($site)) {
     $site['settings'] = unserialize($site['settings']);

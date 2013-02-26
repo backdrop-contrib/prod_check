@@ -109,14 +109,14 @@ function _prod_monitor_generate_updates_link($id, $update_status) {
  * Callback for performance page.
  */
 function prod_monitor_performance($data) {
-  //drupal_set_title($title);
+  drupal_set_title(t('Performance logs for') .' '. _prod_monitor_get_url($data['id']));
 
   // TODO: add 'get stats now' button.
   //$site = _prod_monitor_get_site($id, TRUE);
 
   return array(
     'performance_data' => array(
-      '#data' => $data,
+      '#data' => $data['data'],
       '#theme' => 'prod_monitor_performance',
     ),
   );
