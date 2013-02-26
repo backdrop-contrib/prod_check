@@ -73,6 +73,10 @@ function prod_check_permission() {
       'title' => t("Access Production check's status page"),
       'description' => t('View the report on all checks performed by Production check.'),
     ),
+    'switch to production mode' => array(
+      'title' => t("Switch to production mode"),
+      'description' => t('Allow a user to switch a site to production mode.'),
+    ),
   );
 }
 
@@ -105,7 +109,7 @@ function prod_check_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('prod_check_prod_mode_form'),
     'access callback' => 'user_access',
-    'access arguments' => array('access production check'),
+    'access arguments' => array('switch to production mode'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'includes/prod_check.admin.inc',
     'weight' => 1,
