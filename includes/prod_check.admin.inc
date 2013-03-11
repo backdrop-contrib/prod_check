@@ -452,14 +452,6 @@ function prod_check_settings_form_submit($form, &$form_state) {
       else {
         variable_set('prod_check_apcpass', 'password');
       }
-      // Memcache.
-      variable_set('prod_check_memcacheuser', $form_state['values']['prod_check_memcacheuser']);
-      if (!empty($form_state['values']['prod_check_memcachepass'])) {
-        variable_set('prod_check_memcachepass', $form_state['values']['prod_check_memcachepass']);
-      }
-      else {
-        variable_set('prod_check_memcachepass', 'password');
-      }
       if ($form_state['values']['prod_check_enable_xmlrpc']) {
         // Enable.
         variable_set('prod_check_enable_xmlrpc', $form_state['values']['prod_check_enable_xmlrpc']);
