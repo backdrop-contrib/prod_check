@@ -18,6 +18,11 @@ function theme_prod_monitor_update_report($variables) {
   $output .= ' <span class="check-manually">('. l(t('Check manually'), 'admin/reports/prod-monitor/site/'.$id.'/update-check') .')</span>';
   $output .= "</div>\n";
 
+  if (!is_array($data)) {
+    $output .= '<p>'. $data .'</p>';
+    return $output;
+  }
+
   $header = array();
   $rows = array();
 
