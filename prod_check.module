@@ -69,6 +69,10 @@ function prod_check_help($path, $arg) {
 function prod_check_permission() {
 
   return array(
+    'administer production check' => array(
+      'title' => t('Administer Production Check'),
+      'description' => t('Configure Production Check settings.'),
+    ),
     'access production check' => array(
       'title' => t("Access Production check's status page"),
       'description' => t('View the report on all checks performed by Production check.'),
@@ -121,7 +125,7 @@ function prod_check_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('prod_check_settings_form'),
     'access callback' => 'user_access',
-    'access arguments' => array('access production check'),
+    'access arguments' => array('administer production check'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/prod_check.admin.inc',
   );
