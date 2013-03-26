@@ -131,6 +131,26 @@ function prod_check_settings_form($form, &$form_state) {
     '#required' => FALSE,
   );
 
+  // Disabled module settings
+  $form['prod_check_disabled'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Disabled modules'),
+    '#description' => t('You can choose to disable checking for updates for disabled modules here.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['prod_check_disabled']['prod_check_exclude_disabled_modules'] = array(
+    '#type' => 'checkbox',
+    '#title' => t("Don't check for updates for disabled modules"),
+    '#default_value' => variable_get('prod_check_exclude_disabled_modules', 0),
+    '#description' => t('When checked, only enabled modules will be reported. Note that this can cause some modules that are used but not enabled (f.e. APC, memcache, domain,...) to get skipped. See the documentation on how to add disabled modules on a whitelist.'),
+    '#required' => FALSE,
+  );
+  $modules = implode(', ', _prod_check_get_disabled_modules_whitelist());
+  $form['prod_check_disabled']['prod_check_disabled_modules_whitelist'] = array(
+    '#markup' => t('Currently these modules will be forcefully checked even when they are disabled: %modules', array('%modules' => $modules)),
+  );
+
   // XMLRPC settings.
   $form['prod_check_xmlrpc'] = array(
     '#type' => 'fieldset',
@@ -452,6 +472,7 @@ function prod_check_settings_form_submit($form, &$form_state) {
       else {
         variable_set('prod_check_apcpass', 'password');
       }
+      variable_set('prod_check_exclude_disabled_modules', $form_state['values']['prod_check_exclude_disabled_modules']);
       if ($form_state['values']['prod_check_enable_xmlrpc']) {
         // Enable.
         variable_set('prod_check_enable_xmlrpc', $form_state['values']['prod_check_enable_xmlrpc']);

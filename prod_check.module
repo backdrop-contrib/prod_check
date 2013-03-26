@@ -177,6 +177,51 @@ function prod_check_theme($existing, $type, $theme, $path) {
 }
 
 /**
+ * Helper function that assembles the list of disabled modules to check.
+ */
+function _prod_check_get_disabled_modules_whitelist() {
+  $modules = array();
+  $modules += module_invoke_all('prod_check_disabled_modules_whitelist');
+  $modules = array_unique(array_map('drupal_strtolower', $modules));
+
+  // Allow other modules to add or delete modules to force check
+  drupal_alter('prod_check_disabled_modules_whitelist', $modules);
+
+  return $modules;
+}
+
+/**
+ * Implements hook_prod_check_disabled_modules_whitelist().
+ *
+ * Check for updates for these modules even if they are disabled. Some modules
+ * (f.e. cache backends) are included directly but don't necessarily have the
+ * module enabled in the module list. This list can be extended by other modules
+ * or updated with other commonly used modules that are used in such a way.
+ */
+function prod_check_prod_check_disabled_modules_whitelist() {
+  return array('apc', 'memcache', 'varnish');
+}
+
+/**
+ * Implements hook_update_projects_alter().
+ *
+ * If we chose to exclude disabled modules, check if some of those are on the
+ * whitelist.
+ */
+function prod_check_update_projects_alter(&$projects) {
+  if (variable_get('prod_check_exclude_disabled_modules', 0)) {
+    $force_checked_modules = _prod_check_get_disabled_modules_whitelist();
+    foreach ($projects as $project_name => $project) {
+      if ($project['project_type'] == 'module-disabled') {
+        if (!in_array($project['name'], $force_checked_modules)) {
+          unset($projects[$project_name]);
+        }
+      }
+    }
+  }
+}
+
+/**
  * Custom callback to override /nagios page.
  */
 function prod_check_nagios_status_page() {
@@ -1745,12 +1790,10 @@ function _prod_check_module_list($caller = 'internal') {
         // (for one hour) but this function here ONLY gets called ONCE a week at
         // a very specific given time. Feel free to comment.
         $projects = array();
-        // Process enabled modules.
+        // Process enabled modules and themes.
         _prod_check_process_info_list($projects, system_rebuild_module_data(), 'module', TRUE);
         _prod_check_process_info_list($projects, system_rebuild_theme_data(), 'theme', TRUE);
-        // TODO: add option to only check for ENABLED modules like the core's
-        // update module?
-        // Process disabled modules.
+        // Process disabled modules and themes.
         _prod_check_process_info_list($projects, system_rebuild_module_data(), 'module', FALSE);
         _prod_check_process_info_list($projects, system_rebuild_theme_data(), 'theme', FALSE);
         // Allow other modules to alter projects before fetching and comparing.
