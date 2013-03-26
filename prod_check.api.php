@@ -79,7 +79,7 @@ function my_module_additional_check($caller = 'internal') {
   $check['my_module_additional_check'] = array(
     '#title' => t($title),
     '#state' => variable_get('my_module_debug', 1) != 1,
-    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : REQUIREMENT_ERROR,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
     '#value_ok'  => $setting2,
     '#value_nok'  => $setting1,
     '#description_ok'  => prod_check_ok_title($title, $path),
