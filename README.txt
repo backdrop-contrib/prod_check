@@ -217,6 +217,39 @@ function my_module_prod_check_return_data() {
 }
 ?>
 
+Development: hook_prod_check_disabled_modules_whitelist()
+=========================================================
+Check for updates for these modules even if they are disabled. Some modules
+(f.e. cache backends) are included directly but don't necessarily have the
+module enabled in the module list. This list can be extended by other modules or
+updated with other commonly used modules that are used in such a way.
+
+An example as implemented by this module:
+
+<?php
+/**
+ * Implements hook_prod_check_disabled_modules_whitelist().
+ */
+function my_module_prod_check_disabled_modules_whitelist() {
+  return array('apc', 'memcache', 'varnish');
+}
+?>
+
+Development: hook_prod_check_disabled_modules_whitelist_alter()
+===============================================================
+Allow other modules to add or delete modules to force check:
+
+<?php
+/**
+ * Implements hook_prod_check_disabled_modules_whitelist_alter().
+ */
+function my_module_prod_check_disabled_modules_whitelist_alter(&$modules) {
+  // Remove apc module from the whitelist.
+  if ($pos = array_search('apc', $modules)) {
+    unset($modules[$pos]);
+  }
+}
+?>
 
 Installation
 ============
