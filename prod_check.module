@@ -615,6 +615,7 @@ function _prod_check_functions() {
       '_prod_check_search_config' => 'Search config',
       '_prod_check_update_status' => 'Update status',
       '_prod_check_webform' =>  'Webform',
+      '_prod_check_missing_module_files' => 'Active modules',
     ),
   );
 
@@ -887,10 +888,7 @@ function _prod_check_release_notes($caller = 'internal') {
   $remaining_files = array();
   $error = FALSE;
   foreach ($files as $file) {
-    // It would seem that $_SERVER['DOCUMENT_ROOT'] is not always set, hence the
-    // use of realpath() in combination with base path to determine the full
-    // path to the Drupal installation.
-    if (file_exists(realpath('.'.base_path()).'/'.$file)) {
+    if (file_exists(DRUPAL_ROOT . '/' . $file)) {
       array_push($remaining_files, $file);
       $error = TRUE;
     }
@@ -1559,6 +1557,41 @@ function _prod_check_webform($caller = 'internal') {
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('The !link default from e-mail address should not be a development address on production sites!', prod_check_link_array($title, $path)),
     '#nagios_key' => 'WFRM',
+    '#nagios_type' => 'state',
+  );
+
+  return prod_check_execute_check($check, $caller);
+}
+
+// Active modules
+function _prod_check_missing_module_files($caller = 'internal') {
+  $missing = $total = 0;
+  $check = $modules = array();
+
+  $title = 'Active modules';
+
+  // Get a list of .module files for active modules. If a module is active but
+  // the .module file is missing, this can cause serious performance issues, see
+  // http://drupal.org/node/1080330.
+  $result = db_query("SELECT filename FROM {system} WHERE status = 1 AND filename NOT LIKE '%.info'");
+  foreach ($result as $row) {
+    $path = DRUPAL_ROOT . '/' . $row->filename;
+    if(!file_exists($path)) {
+      $modules[] = $row->filename;
+      $missing++;
+    }
+    $total++;
+  }
+
+  $check['prod_check_modules_available'] = array(
+    '#title' => t($title),
+    '#state' => $missing == 0,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
+    '#value_ok'  => t('A total of !total active modules are registered in the database. No missing entries found.', array('!total' => $total)),
+    '#value_nok'  => t('A total of !total active modules are registered in the database. !missing missing entries found!', array('!total' => $total, '!missing' => $missing)),
+    '#description_ok'  => t('All *.module files are present.'),
+    '#description_nok' => t('The following files are missing: %modules.', array('%modules' => implode(', ', $modules))),
+    '#nagios_key' => 'MODS',
     '#nagios_type' => 'state',
   );
 
