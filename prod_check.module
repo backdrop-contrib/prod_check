@@ -880,7 +880,6 @@ function _prod_check_release_notes($caller = 'internal') {
     'MAINTAINERS.txt',
     'README.txt',
     'UPGRADE.txt',
-    'sites/example.sites.php',
     'sites/all/README.txt',
     'sites/all/themes/README.txt',
     'sites/all/modules/README.txt',
