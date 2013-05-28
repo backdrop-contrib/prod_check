@@ -751,16 +751,13 @@ function prod_check_apc() {
  * Integration of the Memcache status page.
  */
 function prod_check_memcache() {
-  global $conf;
+  // Memcache module defaults to 127.0.0.1:11211
+  $memcache_servers = variable_get('memcache_servers', array('127.0.0.1:11211' => 'default'));
 
-  if (isset($conf['memcache_servers'])) {
-    global $MEMCACHE_SERVERS;
-    $MEMCACHE_SERVERS = array_keys($conf['memcache_servers']);
-    include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.memcache.inc');
-  }
-  else {
-    print 'No memcache servers found in settings.php.';
-  }
+  global $MEMCACHE_SERVERS;
+  $MEMCACHE_SERVERS = array_keys($memcache_servers);
+  include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.memcache.inc');
+
   exit;
 }
 
