@@ -67,7 +67,6 @@ function prod_check_help($path, $arg) {
  * Implementation of hook_permission()
  */
 function prod_check_permission() {
-
   return array(
     'administer production check' => array(
       'title' => t('Administer Production Check'),
@@ -89,6 +88,12 @@ function prod_check_permission() {
  */
 function prod_check_menu() {
   $items = array();
+
+  $admin_defaults = array(
+    'access arguments' => array('access production check'),
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/prod_check.admin.inc',
+  );
 
   $items['admin/reports/prod-check'] = array(
     'title' => 'Production check',
@@ -130,23 +135,22 @@ function prod_check_menu() {
     'file' => 'includes/prod_check.admin.inc',
   );
 
+  $items['admin/reports/status/database'] = array(
+    'title' => 'Database',
+    'page callback' => 'prod_check_dbstatus',
+  ) + $admin_defaults;
+
   $items['admin/reports/status/apc'] = array(
     'title' => 'APC',
     'page callback' => 'prod_check_apc',
     'access callback' => 'user_access',
-    'access arguments' => array('access production check'),
-    'type' => MENU_CALLBACK,
-    'file' => 'includes/prod_check.admin.inc',
-  );
+  ) + $admin_defaults;
 
   $items['admin/reports/status/memcache'] = array(
     'title' => 'Memcache',
     'page callback' => 'prod_check_memcache',
     'access callback' => 'user_access',
-    'access arguments' => array('access production check'),
-    'type' => MENU_CALLBACK,
-    'file' => 'includes/prod_check.admin.inc',
-  );
+  ) + $admin_defaults;
 
   return $items;
 }
@@ -171,6 +175,10 @@ function prod_check_theme($existing, $type, $theme, $path) {
   return array(
     'prod_check_status_report' => array(
       'variables' => array('requirements' => NULL),
+      'file' => 'includes/prod_check.theme.inc',
+    ),
+    'prod_check_dbstatus' => array(
+      'variables' => array('title' => NULL, 'status' => NULL, 'details' => NULL),
       'file' => 'includes/prod_check.theme.inc',
     ),
   );

@@ -738,6 +738,251 @@ function prod_check_prod_mode_modules($options) {
 }
 
 /**
+ * Generate default key if none is present.
+ */
+function prod_check_generate_key($length = 25) {
+  $chars = 'abcdefghijklmnopqrstuxyvwzABCDEFGHIJKLMNOPQRSTUXYVWZ+-*#&@!?';
+  $size = strlen($chars);
+  $key = '';
+  for ($i = 0; $i < $length; $i++) {
+    $key .= $chars[rand(0, $size - 1)];
+  }
+
+  return $key;
+}
+
+/**
+ * Database status page.
+ */
+function prod_check_dbstatus() {
+/*  global $db_type, $db_url;
+
+  $db_name = trim(parse_url($db_url, PHP_URL_PATH), '/');
+  $details = array(
+    'status' => array(),
+    'tables' => array(),
+    'databases' => array(),
+  );
+
+  switch($db_type) {
+    case 'mysql':
+    case 'mysqli':
+      $output = _prod_check_dbstatus_mysql($db_type, $db_name, $details);
+      break;
+
+    case 'pgsql':
+      $output = _prod_check_dbstatus_pgsql($db_name, $details);
+      break;
+
+    default:
+      $title = t('Unsupported database type.');
+      $output = theme('prod_check_dbstatus', $title, NULL, $details);
+      break;
+  }
+
+  return $output;*/
+}
+
+/**
+ * Helper function to return MySQL status info.
+ */
+function _prod_check_dbstatus_mysql($db_type, $db_name, $details) {
+  // Set title & version.
+  // mysql_get_server_info() or mysqli_get_server_info()
+  $server = call_user_func($db_type . '_get_server_info');
+  $title = t('Running @db @version', array('@db' => 'MySQL', '@version' => $server));
+
+  // Get basic status.
+  // mysql_stat or mysqli_stat()
+  $status = call_user_func($db_type . '_stat');
+  if (is_array($status)) {
+    $status = implode("<br />\n", $status);
+  }
+  else {
+    $status = str_replace('  ', "<br />\n", $status);
+  }
+  // Get additional status.
+  // mysql_get_client_info() or mysqli_get_client_info()
+  $client_info = call_user_func($db_type . '_get_client_info');
+  // mysql_get_host_info() or mysqli_get_host_info()
+  $host_info = call_user_func($db_type . '_get_host_info');
+  // mysql_get_host_info() or mysqli_get_host_info()
+  $protocol_version = call_user_func($db_type . '_get_proto_info');
+  $additional = "Client version: $client_info<br />\n";
+  $additional .= "Host info: $host_info<br />\n";
+  $additional .= "Protocol version: $protocol_version<br />\n";
+  $additional .= t('For a summary, check the Drupal core <a href="!link">sql status page</a>.', array('!link' => url('admin/reports/status/sql'))) . "<br /><br />\n";
+  $status = $additional . $status;
+
+  // Get detailed status.
+  $rows = array();
+  try {
+    $result = db_query('SHOW STATUS');
+    while ($row = db_fetch_object($result)) {
+      $rows[] = array($row->Variable_name, $row->Value);
+    }
+  } catch (Exception $e) {}
+  if ($rows) {
+    $details['status'] = array(
+      'title' => t('Detailed status'),
+      'header' => array(
+        t('Variable'),
+        t('Value'),
+      ),
+      'rows' => $rows,
+    );
+  }
+
+  // Get all tables.
+  $rows = array();
+  try {
+    $result = db_query('SHOW TABLES FROM %s', $db_name);
+    $property = 'Tables_in_' . $db_name;
+    while ($row = db_fetch_object($result)) {
+      $rows[] = array($row->$property);
+    }
+  } catch (Exception $e) {}
+  if ($rows) {
+    $details['tables'] = array(
+      'title' => t('Tables for active database'),
+      'header' => array(
+        t('Table'),
+      ),
+      'rows' => $rows,
+    );
+  }
+
+  // Get all databases.
+  $rows = array();
+  try {
+    $result = db_query('SHOW DATABASES');
+    while ($row = db_fetch_object($result)) {
+      $rows[] = array($row->Database);
+    }
+  } catch (Exception $e) {}
+  if ($rows) {
+    $details['databases'] = array(
+      'title' => t('Available databases'),
+      'header' => array(
+        t('Database'),
+      ),
+      'rows' => $rows,
+    );
+  }
+
+  return theme('prod_check_dbstatus', $title, $status, $details);
+}
+
+/**
+ * Helper function to return PostgreSQL status info.
+ *
+ * Useful links for possible expansion:
+ *  http://www.php.net/manual/en/book.pgsql.php
+ *  http://www.alberton.info/postgresql_meta_info.html#.UbXmAFQW3eU
+ *  http://www.postgresql.org/docs/devel/static/catalog-pg-statistic.html
+ *  http://www.postgresql.org/docs/9.0/static/functions-info.html
+ *  http://www.postgresql.org/docs/9.0/static/functions-admin.html
+ */
+function _prod_check_dbstatus_pgsql($db_name, $details) {
+  global $active_db;
+
+  // Set title & version.
+  $server = db_result(db_query('SELECT version()'));
+  $title = t('Running @version', array('@version' => $server));
+
+  $variables = array(
+    'server_version',
+    'server_encoding',
+    'client_encoding',
+    'is_superuser',
+    'session_authorization',
+    'DateStyle',
+    'TimeZone',
+    'integer_datetimes',
+  );
+
+  $status = '';
+  foreach ($variables as $variable) {
+    $status .= $variable . ': ' . pg_parameter_status($active_db, $variable) . "<br />\n";
+  }
+
+  // Get detailed status.
+  $rows = array();
+  try {
+    // See http://www.postgresql.org/docs/9.0/static/view-pg-settings.html
+    $result = db_query('SELECT * FROM pg_settings');
+    while ($row = db_fetch_object($result)) {
+    /* TODO: add some more detail here? This is available:
+
+         Column   | Type | Modifiers | Storage  | Description
+      ------------+------+-----------+----------+-------------
+       name       | text |           | extended |
+       setting    | text |           | extended |
+       unit       | text |           | extended |
+       category   | text |           | extended |
+       short_desc | text |           | extended |
+       extra_desc | text |           | extended |
+       context    | text |           | extended |
+       vartype    | text |           | extended |
+       source     | text |           | extended |
+       min_val    | text |           | extended |
+       max_val    | text |           | extended | */
+      $rows[] = array($row->name, $row->setting);
+    }
+  } catch (Exception $e) {}
+  if ($rows) {
+    $details['status'] = array(
+      'title' => t('Detailed status'),
+      'header' => array(
+        t('Name'),
+        t('Setting'),
+      ),
+      'rows' => $rows,
+    );
+  }
+
+  // Get all tables.
+  $rows = array();
+  try {
+    // See http://www.postgresql.org/docs/9.0/static/catalog-pg-class.html
+    // relclass: r = ordinary table, i = index, S = sequence, v = view, c = composite type, t = TOAST table
+    $result = db_query("SELECT relname FROM pg_class WHERE relname !~ '^(pg_|sql_)' AND relkind = 'r'");
+    while ($row = db_fetch_object($result)) {
+      $rows[] = array($row->relname);
+    }
+  } catch (Exception $e) {}
+  if ($rows) {
+    $details['tables'] = array(
+      'title' => t('Tables for active database'),
+      'header' => array(
+        t('Table'),
+      ),
+      'rows' => $rows,
+    );
+  }
+
+  // Get all databases.
+  $rows = array();
+  try {
+    $result = db_query('SELECT datname FROM pg_database');
+    while ($row = db_fetch_object($result)) {
+      $rows[] = array($row->datname);
+    }
+  } catch (Exception $e) {}
+  if ($rows) {
+    $details['databases'] = array(
+      'title' => t('Available databases'),
+      'header' => array(
+        t('Database'),
+      ),
+      'rows' => $rows,
+    );
+  }
+
+  return theme('prod_check_dbstatus', $title, $status, $details);
+}
+
+/**
  * Integration of the APC status page.
  */
 function prod_check_apc() {
@@ -759,18 +1004,4 @@ function prod_check_memcache() {
   include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.memcache.inc');
 
   exit;
-}
-
-/**
- * Generate default key if none is present.
- */
-function prod_check_generate_key($length = 25) {
-  $chars = 'abcdefghijklmnopqrstuxyvwzABCDEFGHIJKLMNOPQRSTUXYVWZ+-*#&@!?';
-  $size = strlen($chars);
-  $key = '';
-  for ($i = 0; $i < $length; $i++) {
-    $key .= $chars[rand(0, $size - 1)];
-  }
-
-  return $key;
 }
