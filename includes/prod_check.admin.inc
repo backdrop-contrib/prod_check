@@ -769,20 +769,24 @@ function prod_check_dbstatus() {
   $add_js = FALSE;
 
   $title = '';
+  $db = $db_type;
   switch($db_type) {
-    case 'mysql':
-      // Set title & version.
-      $server = $pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
-      $title = t('Running @db @version', array('@db' => 'MySQL', '@version' => $server));
-      // Get detailed status.
-      $details = _prod_check_dbstatus_mysql($details);
-      break;
     case 'pgsql':
       // Set title & version.
       $server = db_query('SELECT version()')->fetchField();
       $title = t('Running @version', array('@version' => $server));
       // Get detailed status.
       $details = _prod_check_dbstatus_pgsql($details);
+      break;
+    case 'mysql':
+      $db = 'MySQL';
+      // Get detailed status.
+      $details = _prod_check_dbstatus_mysql($details);
+      // NO break here!
+    default:
+      // Set title & version.
+      $server = $pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
+      $title = t('Running @db @version', array('@db' => $db, '@version' => $server));
       break;
   }
 
