@@ -395,9 +395,9 @@ function prod_check_settings_form_validate($form, &$form_state) {
   // seem logical...
   $base = drupal_get_path('module', 'prod_check');
   drupal_add_css($base . '/css/prod-check.css');
-  drupal_add_js($base . '/js/jquery.equalheights.js', 'module', 'header');
-  drupal_add_js($base . '/js/jquery.maskedinput.min.js', 'module', 'header');
-  drupal_add_js($base . '/js/prod-check.js', 'module', 'header');
+  drupal_add_js($base . '/js/jquery.equalheights.js');
+  drupal_add_js($base . '/js/jquery.maskedinput.min.js');
+  drupal_add_js($base . '/js/prod-check.js');
 
   if (module_exists('dblog')) {
     if (!is_numeric($form_state['values']['prod_check_dblog_php_threshold'])) {
