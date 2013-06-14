@@ -755,70 +755,132 @@ function prod_check_generate_key($length = 25) {
  * Database status page.
  */
 function prod_check_dbstatus() {
-/*  global $db_type, $db_url;
+  // Get active connection.
+  $pdo = Database::getConnection();
+  // Get database driver.
+  $db_type = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
 
-  $db_name = trim(parse_url($db_url, PHP_URL_PATH), '/');
   $details = array(
     'status' => array(),
     'tables' => array(),
     'databases' => array(),
   );
 
+  $add_js = FALSE;
+
+  $title = '';
   switch($db_type) {
     case 'mysql':
-    case 'mysqli':
-      $output = _prod_check_dbstatus_mysql($db_type, $db_name, $details);
+      // Set title & version.
+      $server = $pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
+      $title = t('Running @db @version', array('@db' => 'MySQL', '@version' => $server));
+      // Get detailed status.
+      $details = _prod_check_dbstatus_mysql($details);
       break;
-
     case 'pgsql':
-      $output = _prod_check_dbstatus_pgsql($db_name, $details);
-      break;
-
-    default:
-      $title = t('Unsupported database type.');
-      $output = theme('prod_check_dbstatus', $title, NULL, $details);
+      // Set title & version.
+      $server = db_query('SELECT version()')->fetchField();
+      $title = t('Running @version', array('@version' => $server));
+      // Get detailed status.
+      $details = _prod_check_dbstatus_pgsql($details);
       break;
   }
 
-  return $output;*/
+  // Get basic status.
+  $status = '';
+  try {
+    $status = $pdo->getAttribute(PDO::ATTR_SERVER_INFO);
+    if (is_array($status)) {
+      $status = implode("<br />\n", $status);
+    }
+    else {
+      $status = str_replace('  ', "<br />\n", $status);
+    }
+  } catch(Exception $e) {}
+
+  // Get additional status.
+  $additional = '';
+  $attributes = array(
+    'AUTOCOMMIT' => 'Auto commit',
+    'PREFETCH' => 'Prefetch',
+    'TIMEOUT' => 'Timeout',
+    'ERRMODE' => 'Error mode',
+    'CLIENT_VERSION' => 'Client version',
+    'CONNECTION_STATUS' => 'Connection status',
+    'CASE' => 'Case',
+    'CURSOR_NAME' => 'Cursor name',
+    'CURSOR' => 'Cursor',
+    'ORACLE_NULLS' => 'Oracle nulls',
+    'PERSISTENT' => 'Persistent',
+    'STATEMENT_CLASS' => 'Statement class',
+    'FETCH_CATALOG_NAMES' => 'Fatch catalog names',
+    'FETCH_TABLE_NAMES' => 'Fetch table names',
+    'STRINGIFY_FETCHES' => 'Stringify fetches',
+    'MAX_COLUMN_LEN' => 'Max column length',
+    'DEFAULT_FETCH_MODE' => 'Default fetch mode',
+    'EMULATE_PREPARES' => 'Emulate prepares',
+  );
+  foreach ($attributes as $constant => $name) {
+    try {
+      $result = $pdo->getAttribute(constant("PDO::ATTR_$constant"));
+      if (is_bool($result)) {
+        $result = $result ? 'TRUE' : 'FALSE';
+      }
+      elseif (is_array($result) || is_object($result)) {
+        $add_js = TRUE;
+        include_once DRUPAL_ROOT . '/includes/utility.inc';
+
+        $class = strtolower(str_replace('_', '-', $constant));
+
+        $link = l(
+          t('Show details'),
+          'admin/reports/status/database',
+          array(
+            'attributes' => array(
+              'class' => array('show-more'),
+              'data-details' => $class
+            )
+          )
+        );
+
+        // Seemed a bit overkill to create a css file only for this display:none
+        // thingy.
+        $result = $link . '<pre class="' . $class . '" style="display:none;">' . drupal_var_export($result) . '</pre>';
+      }
+      $additional .= $name . ': ' . $result . "<br />\n";
+    } catch (Exception $e) {}
+  }
+  $status = "$additional<br />\n$status";
+
+  if ($add_js) {
+    $base = drupal_get_path('module', 'prod_check');
+    drupal_add_js($base . '/js/prod-check-database.js');
+  }
+
+  return theme('prod_check_dbstatus', array('title' => $title, 'status' => $status, 'details' => $details));
 }
 
 /**
- * Helper function to return MySQL status info.
+ * Helper function to return MySQL detailed status info.
  */
-function _prod_check_dbstatus_mysql($db_type, $db_name, $details) {
-  // Set title & version.
-  // mysql_get_server_info() or mysqli_get_server_info()
-  $server = call_user_func($db_type . '_get_server_info');
-  $title = t('Running @db @version', array('@db' => 'MySQL', '@version' => $server));
-
-  // Get basic status.
-  // mysql_stat or mysqli_stat()
-  $status = call_user_func($db_type . '_stat');
-  if (is_array($status)) {
-    $status = implode("<br />\n", $status);
+function _prod_check_dbstatus_mysql($details) {
+  $db_name = '';
+  // Feels like there should be a better way of getting the current database
+  // name.
+  $db_setting = Database::getConnectionInfo();
+  foreach($db_setting as $params) {
+    if(isset($params['database'])) {
+      // We get the first name we find.
+      $db_name = $params['database'];
+      break;
+    }
   }
-  else {
-    $status = str_replace('  ', "<br />\n", $status);
-  }
-  // Get additional status.
-  // mysql_get_client_info() or mysqli_get_client_info()
-  $client_info = call_user_func($db_type . '_get_client_info');
-  // mysql_get_host_info() or mysqli_get_host_info()
-  $host_info = call_user_func($db_type . '_get_host_info');
-  // mysql_get_host_info() or mysqli_get_host_info()
-  $protocol_version = call_user_func($db_type . '_get_proto_info');
-  $additional = "Client version: $client_info<br />\n";
-  $additional .= "Host info: $host_info<br />\n";
-  $additional .= "Protocol version: $protocol_version<br />\n";
-  $additional .= t('For a summary, check the Drupal core <a href="!link">sql status page</a>.', array('!link' => url('admin/reports/status/sql'))) . "<br /><br />\n";
-  $status = $additional . $status;
 
   // Get detailed status.
   $rows = array();
   try {
     $result = db_query('SHOW STATUS');
-    while ($row = db_fetch_object($result)) {
+    foreach ($result as $row) {
       $rows[] = array($row->Variable_name, $row->Value);
     }
   } catch (Exception $e) {}
@@ -836,15 +898,17 @@ function _prod_check_dbstatus_mysql($db_type, $db_name, $details) {
   // Get all tables.
   $rows = array();
   try {
-    $result = db_query('SHOW TABLES FROM %s', $db_name);
+    // We cannot use the standard db_query with arguments here as the argument
+    // should NOT be enclosed in quotes.
+    $result = db_query(sprintf('SHOW TABLES FROM %s', $db_name));
     $property = 'Tables_in_' . $db_name;
-    while ($row = db_fetch_object($result)) {
+    foreach ($result as $row) {
       $rows[] = array($row->$property);
     }
   } catch (Exception $e) {}
   if ($rows) {
     $details['tables'] = array(
-      'title' => t('Tables for active database'),
+      'title' => t('Tables for active database %name', array('%name' => $db_name)),
       'header' => array(
         t('Table'),
       ),
@@ -856,7 +920,7 @@ function _prod_check_dbstatus_mysql($db_type, $db_name, $details) {
   $rows = array();
   try {
     $result = db_query('SHOW DATABASES');
-    while ($row = db_fetch_object($result)) {
+    foreach ($result as $row) {
       $rows[] = array($row->Database);
     }
   } catch (Exception $e) {}
@@ -870,7 +934,7 @@ function _prod_check_dbstatus_mysql($db_type, $db_name, $details) {
     );
   }
 
-  return theme('prod_check_dbstatus', $title, $status, $details);
+  return $details;
 }
 
 /**
@@ -884,34 +948,12 @@ function _prod_check_dbstatus_mysql($db_type, $db_name, $details) {
  *  http://www.postgresql.org/docs/9.0/static/functions-admin.html
  */
 function _prod_check_dbstatus_pgsql($db_name, $details) {
-  global $active_db;
-
-  // Set title & version.
-  $server = db_result(db_query('SELECT version()'));
-  $title = t('Running @version', array('@version' => $server));
-
-  $variables = array(
-    'server_version',
-    'server_encoding',
-    'client_encoding',
-    'is_superuser',
-    'session_authorization',
-    'DateStyle',
-    'TimeZone',
-    'integer_datetimes',
-  );
-
-  $status = '';
-  foreach ($variables as $variable) {
-    $status .= $variable . ': ' . pg_parameter_status($active_db, $variable) . "<br />\n";
-  }
-
   // Get detailed status.
   $rows = array();
   try {
     // See http://www.postgresql.org/docs/9.0/static/view-pg-settings.html
     $result = db_query('SELECT * FROM pg_settings');
-    while ($row = db_fetch_object($result)) {
+    foreach ($result as $row) {
     /* TODO: add some more detail here? This is available:
 
          Column   | Type | Modifiers | Storage  | Description
@@ -947,13 +989,13 @@ function _prod_check_dbstatus_pgsql($db_name, $details) {
     // See http://www.postgresql.org/docs/9.0/static/catalog-pg-class.html
     // relclass: r = ordinary table, i = index, S = sequence, v = view, c = composite type, t = TOAST table
     $result = db_query("SELECT relname FROM pg_class WHERE relname !~ '^(pg_|sql_)' AND relkind = 'r'");
-    while ($row = db_fetch_object($result)) {
+    foreach ($result as $row) {
       $rows[] = array($row->relname);
     }
   } catch (Exception $e) {}
   if ($rows) {
     $details['tables'] = array(
-      'title' => t('Tables for active database'),
+      'title' => t('Tables for active database %name', array('%name' => $db_name)),
       'header' => array(
         t('Table'),
       ),
@@ -965,7 +1007,7 @@ function _prod_check_dbstatus_pgsql($db_name, $details) {
   $rows = array();
   try {
     $result = db_query('SELECT datname FROM pg_database');
-    while ($row = db_fetch_object($result)) {
+    foreach ($result as $row) {
       $rows[] = array($row->datname);
     }
   } catch (Exception $e) {}
@@ -979,7 +1021,7 @@ function _prod_check_dbstatus_pgsql($db_name, $details) {
     );
   }
 
-  return theme('prod_check_dbstatus', $title, $status, $details);
+  return $details;
 }
 
 /**

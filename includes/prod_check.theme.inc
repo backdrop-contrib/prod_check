@@ -74,13 +74,13 @@ function theme_prod_check_dbstatus($variables) {
   // DB system and version.
   $output .= '<h2>' . $title . '</h2>';
   // Basic status info.
-  $output .= '<p>' . $status . '</p><p>&nbsp;</p>';
+  $output .= '<div>' . $status . '</div><p>&nbsp;</p>';
 
   // Add detailed statuses.
   foreach ($details as $type) {
     if ($type) {
       $caption = '<h2>' . $type['title'] . '</h2>';
-      $output .= theme('table', $type['header'], $type['rows'], array(), $caption);
+      $output .= theme('table', array('header' => $type['header'], 'rows' => $type['rows'], 'caption' => $caption));
     }
   }
 
