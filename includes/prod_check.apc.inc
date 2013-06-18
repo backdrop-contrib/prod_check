@@ -22,7 +22,7 @@
 
  */
 
-$VERSION='$Id: apc.php 307048 2011-01-03 23:53:17Z kalle $';
+$VERSION='$Id: apc.php 325483 2012-05-01 00:34:04Z rasmus $';
 
 ////////// READ OPTIONAL CONFIGURATION FILE ////////////
 if (file_exists("apc.conf.php")) include("apc.conf.php");
@@ -94,7 +94,7 @@ $vardom=array(
 	'SORT1'	=> '/^[AHSMCDTZ]$/',	// first sort key
 	'SORT2'	=> '/^[DA]$/',			// second sort key
 	'AGGR'	=> '/^\d+$/',			// aggregation by dir level
-	'SEARCH'	=> '~^[a-zA-Z0-1/_.-]*$~'			// aggregation by dir level
+	'SEARCH'	=> '~^[a-zA-Z0-9/_.-]*$~'			// aggregation by dir level
 );
 
 // default cache mode
