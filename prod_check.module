@@ -573,6 +573,7 @@ function _prod_check_functions() {
       '_prod_check_error_reporting' =>  'Error reporting',
       '_prod_check_user_register' => 'User registration',
       '_prod_check_site_mail' => 'Site e-mail',
+      '_prod_check_poormanscron' => 'Cron',
     ),
   );
 
@@ -755,6 +756,52 @@ function _prod_check_site_mail($caller = 'internal') {
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('The !link address of the website should not be a development address on production sites!', prod_check_link_array($title, $path)),
     '#nagios_key' => 'MAIL',
+    '#nagios_type' => 'state',
+  );
+
+  return prod_check_execute_check($check, $caller);
+}
+
+// Cron check
+function _prod_check_poormanscron($caller = 'internal') {
+  $check = array();
+
+  $title = 'Cron';
+  $path = 'admin/config/system/cron';
+  if ($caller != 'internal') {
+    $path = PRODCHECK_BASEURL . $path;
+  }
+
+  $cron_interval = variable_get('cron_safe_threshold', DRUPAL_CRON_DEFAULT_THRESHOLD);
+
+  // TODO: add some form of cron interval checking here so we can check if the
+  // cron is running regularly AND the poormanscron is disabled?
+  // We could use the data from dblog, but this might not always be enabled so
+  // it will be similar to _prod_check_dblog_php...
+
+  /*$cron_interval_regularity = FALSE;
+  if (module_exists('dblog')) {
+    $result = db_query("SELECT timestamp FROM {watchdog} where type = 'cron' ORDER BY timestamp DESC LIMIT 10");
+    $prev = -1;
+    $diff = array();
+    foreach ($result as $row) {
+      if($prev == -1) {
+        $prev = $row->timestamp;
+        continue;
+      }
+      $diff[] = $prev - $row->timestamp;
+    }
+  }*/
+
+  $check['prod_check_poormanscron'] = array(
+    '#title' => t($title),
+    '#state' => $cron_interval == 0 /*&& $cron_interval_regularity*/,
+    '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
+    '#value_ok'  => t("Drupal's built in cron mechanism is disabled."),
+    '#value_nok'  => t("Drupal's built in cron mechanism is set to run every %interval.", array('%interval' => format_interval($cron_interval))),
+    '#description_ok'  => prod_check_ok_title($title, $path),
+    '#description_nok' => t('The !link interval should be disabled if you have also setup a crontab or scheduled task for this to avoid running the cron more often than you have planned to!', prod_check_link_array($title, $path)),
+    '#nagios_key' => 'CRON',
     '#nagios_type' => 'state',
   );
 
