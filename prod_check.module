@@ -1054,16 +1054,19 @@ function _prod_check_boost($caller = 'internal') {
   if (module_exists('boost')) {
     $check = array();
 
-    $path = 'admin/config/development/performance/boost';
+    $path = 'admin/config/system/boost';
     if ($caller != 'internal') {
       $path = PRODCHECK_BASEURL . $path;
     }
+    $path_htaccess = $path . '/htaccess';
+    $path_crawler = $path . '/crawler';
+    $path_expire = $path . '/expiration';
 
     $title = 'Boost: ';
 
     // Cache lifetime check
-    $subtitle = 'HTML max. cache lifetime ';
-    $var = variable_get('boost_cache_lifetime', 3600);
+    $subtitle = 'text/html - Maximum Cache Lifetime';
+    $var = variable_get('boost_lifetime_max_text/html', 3600);
     $check['prod_check_boost_cache_lifetime'] = array(
       '#title' => t($title.$subtitle),
       '#state' => $var <= 3600,
@@ -1077,53 +1080,78 @@ function _prod_check_boost($caller = 'internal') {
     );
 
     // Clear pages check
-    $subtitle = 'Clear expired pages on cron runs';
-    $var = variable_get('boost_expire_cron', TRUE);
+    $subtitle = 'Remove old cache files on cron';
+    $var = variable_get('boost_expire_cron', BOOST_EXPIRE_CRON);
     $check['prod_check_boost_expire_cron'] = array(
       '#title' => t($title.$subtitle),
       '#state' => $var,
       '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
       '#value_ok'  => t('Enabled'),
       '#value_nok'  => t('Disabled'),
-      '#description_ok'  => prod_check_ok_title($subtitle, $path),
-      '#description_nok' => t('!link is disabled! You should enable this to ensure that expired pages get flushed when the cron runs. This is imperative if you wish to keep view blocks up to date!', prod_check_link_array($subtitle, $path)),
+      '#description_ok'  => prod_check_ok_title($subtitle, $path_expire),
+      '#description_nok' => t('!link is disabled! You should enable this to ensure that expired pages get flushed when the cron runs. This is imperative if you wish to keep view blocks up to date!', prod_check_link_array($subtitle, $path_expire)),
       '#nagios_key' => 'BCLPG',
       '#nagios_type' => 'state',
     );
 
-    /*
     // Crawl on cron check
+    $subtitle = 'Crawl on cron';
+    $var = module_exists('boost_crawler') && variable_get('boost_crawl_on_cron', FALSE);
+    $check['prod_check_boost_crawl_on_cron'] = array(
+      '#title' => t($title.$subtitle),
+      '#state' => $var,
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
+      '#value_ok'  => t('Enabled'),
+      '#value_nok'  => t('Disabled'),
+      '#description_ok'  => prod_check_ok_title($subtitle, $path_crawler),
+      '#description_nok' => t('!link is disabled! You should enable this to ensure that the users are served cached pages all the time. The crawler caches pages before anyone can access them.', prod_check_link_array($subtitle, $path_crawler)),
+      '#nagios_key' => 'BCRCR',
+      '#nagios_type' => 'state',
+    );
 
-    // The Boost module is in development atm, as soon as it is released we'll fix this.
+    // Boost nagios page check
+    if (module_exists('nagios')) {
+      $subtitle = 'Nagios page';
 
-        $subtitle = 'Crawl on cron';
-        $var = variable_get('boost_crawl_on_cron', FALSE);
-        $check['prod_check_boost_crawl_on_cron'] = array(
-          '#title' => t($title.$subtitle),
-          '#state' => $var,
-          '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
-          '#value_ok'  => t('Enabled'),
-          '#value_nok'  => t('Disabled'),
-          '#description_ok'  => prod_check_ok_title($subtitle, $path),
-          '#description_nok' => t('!link is disabled! You should enable this to ensure that the users are served cached pages all the time. The crawler caches pages before anyone can access them.', prod_check_link_array($subtitle, $path)),
-          '#nagios_key' => 'BCRCR',
-          '#nagios_type' => 'state',
-        );
-     */
+      $visibility = variable_get('boost_cacheability_option', BOOST_VISIBILITY_NOTLISTED);
+      $pages_setting = variable_get('boost_cacheability_pages', BOOST_CACHEABILITY_PAGES);
+
+      $pages_array = explode("\n", str_replace(array("\n", "\r\n"), "\n", strtolower($pages_setting)));
+
+      $var = ($visibility && in_array('nagios', $pages_array)) || (!$visibility && !in_array('nagios', $pages_array));
+      if($visibility) {
+        $advise = "You should remove 'nagios' from the listed pages.";
+      }
+      else {
+        $advise = "You should add 'nagios' to the listed pages.";
+      }
+
+      $check['prod_check_boost_apache_nagios_page'] = array(
+        '#title' => t($title.$subtitle),
+        '#state' => !$var,
+        '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
+        '#value_ok'  => t('Enabled'),
+        '#value_nok'  => t('Not properly configured.'),
+        '#description_ok'  => prod_check_ok_title($subtitle, $path),
+        '#description_nok' => t('The !link is being cached by Boost. '.$advise, prod_check_link_array($subtitle, $path)),
+        '#nagios_key' => 'BNAPA',
+        '#nagios_type' => 'state',
+      );
+    }
 
     // Apache etag check
     $subtitle = 'ETag';
-    $var = variable_get('boost_apache_etag', 0);
+    $var = variable_get('boost_apache_etag', BOOST_APACHE_ETAG);
     $check['prod_check_boost_apache_etag'] = array(
       '#title' => t($title.$subtitle),
       '#state' => $var >= 2,
       '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
       '#value_ok'  => t('Enabled'),
       '#value_nok'  => t('Not properly configured.'),
-      '#description_ok'  => prod_check_ok_title($subtitle, $path),
+      '#description_ok'  => prod_check_ok_title($subtitle, $path_htaccess),
       '#description_nok' => t('Your !link settings are not ok! You should enable entity tags (!etag) in Boost so that user side caching and bandwith usage will be optimal! You do need to enable !mod for this to work.',
         array(
-          '!link' => '<em>'.l(t($subtitle), $path, array('attributes' => array('title' => t($subtitle)), 'query' => drupal_get_destination())).'</em>',
+          '!link' => '<em>'.l(t($subtitle), $path_htaccess, array('attributes' => array('title' => t($subtitle)), 'query' => drupal_get_destination())).'</em>',
           '!etag' => '<em>'.l(t('ETags'), 'http://en.wikipedia.org/wiki/HTTP_ETag', array('attributes' => array('title' => t('Etags')))).'</em>',
           '!mod' => '<em>'.l(t('mod_headers'), 'http://httpd.apache.org/docs/2.0/mod/mod_headers.html', array('attributes' => array('title' => t('mod_headers')))).'</em>',
         )
@@ -1131,6 +1159,7 @@ function _prod_check_boost($caller = 'internal') {
       '#nagios_key' => 'BETAG',
       '#nagios_type' => 'state',
     );
+
     $result = prod_check_execute_check($check, $caller);
   }
   return $result;
