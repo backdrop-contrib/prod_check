@@ -1853,6 +1853,10 @@ function _prod_check_redirect($caller = 'internal') {
 // XML sitemap
 function _prod_check_xmlsitemap($caller = 'internal') {
   $check = array();
+  $error = FALSE;
+  $xml_base_url = variable_get('xmlsitemap_base_url', $GLOBALS['base_url']);
+  $value_nok = $msg_nok = '';
+
   $title_ok = 'settings';
   $text_ok = 'Check the !link to verify if they are as you expect.';
 
@@ -1862,14 +1866,25 @@ function _prod_check_xmlsitemap($caller = 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
+  if(!module_exists('xmlsitemap')) {
+    $error = TRUE;
+    $value_nok = t('Disabled');
+    $msg_nok = t('You have not enabled the !link module. This module generates an XML sitemap which can be submitted to search engines, guaranteeing optimal indexation of all urls within the site.', prod_check_link_array($title, 'http://drupal.org/project/xmlsitemap'));
+  }
+  elseif (strtolower($xml_base_url) != strtolower($GLOBALS['base_url'])) {
+    $error = TRUE;
+    $value_nok = t('Not properly configured.');
+    $msg_nok = t('Your sitemap.xml !link is not the same as the current base URL you are viewing the site from.', prod_check_link_array('default base URL', $path));
+  }
+
   $check['prod_check_sitemap'] = array(
     '#title' => t($title),
-    '#state' => module_exists('xmlsitemap'),
+    '#state' => !$error,
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => t('Enabled'),
-    '#value_nok'  => t('Disabled'),
+    '#value_nok'  => $value_nok,
     '#description_ok'  => prod_check_ok_title($title_ok, $path, $text_ok),
-    '#description_nok' => t('You have not enabled the !link module. This module generates an XML sitemap which can be submitted to search engines, guaranteeing optimal indexation of all urls within the site.', prod_check_link_array($title, 'http://drupal.org/project/xmlsitemap')),
+    '#description_nok' => $msg_nok,
     '#nagios_key' => 'XMLS',
     '#nagios_type' => 'state',
   );
