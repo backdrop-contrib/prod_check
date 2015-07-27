@@ -16,18 +16,20 @@ define('PROD_MONITOR_REQUIREMENT_ERROR', 2);
  * We do the same here for the update module constants: redefine them so that we
  * do not need to run the update module entirely!
  */
-define('UPDATE_DEFAULT_URL', 'http://updates.drupal.org/release-history');
-define('UPDATE_NOT_SECURE', 1);
-define('UPDATE_REVOKED', 2);
-define('UPDATE_NOT_SUPPORTED', 3);
-define('UPDATE_NOT_CURRENT', 4);
-define('UPDATE_CURRENT', 5);
-define('UPDATE_NOT_CHECKED', -1);
-define('UPDATE_UNKNOWN', -2);
-define('UPDATE_NOT_FETCHED', -3);
-define('UPDATE_FETCH_PENDING', -4);
-define('UPDATE_MAX_FETCH_ATTEMPTS', 2);
-define('UPDATE_MAX_FETCH_TIME', 5);
+if (!module_exists('update')) {
+  define('UPDATE_DEFAULT_URL', 'http://updates.drupal.org/release-history');
+  define('UPDATE_NOT_SECURE', 1);
+  define('UPDATE_REVOKED', 2);
+  define('UPDATE_NOT_SUPPORTED', 3);
+  define('UPDATE_NOT_CURRENT', 4);
+  define('UPDATE_CURRENT', 5);
+  define('UPDATE_NOT_CHECKED', -1);
+  define('UPDATE_UNKNOWN', -2);
+  define('UPDATE_NOT_FETCHED', -3);
+  define('UPDATE_FETCH_PENDING', -4);
+  define('UPDATE_MAX_FETCH_ATTEMPTS', 2);
+  define('UPDATE_MAX_FETCH_TIME', 5);
+}
 
 /**
  * Implementation of hook_help().
