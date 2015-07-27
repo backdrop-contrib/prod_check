@@ -169,6 +169,19 @@ function _prod_monitor_calculate_project_data($id, $projects, $available) {
     }
   }
 
+  // Handle the ignored modules.
+  if (($ignored = _prod_monitor_get_site_ignored($id))
+    && !empty($ignored['updates'])) {
+    foreach ($ignored['updates'] as $project_name) {
+      if (isset($projects[$project_name])) {
+        $projects[$project_name]['ignored'] = TRUE;
+        $projects[$project_name]['status'] = UPDATE_UNKNOWN;
+      }
+    }
+  }
+
+  drupal_alter('prod_monitor_project_data', $id, $projects, $available);
+
   // Check if we need to flag a security update warning.
   // Prepare object to store generated data to DB.
   $modules = new stdClass();

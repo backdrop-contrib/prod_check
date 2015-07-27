@@ -608,6 +608,25 @@ function _prod_monitor_get_site_modules($id, $exists = FALSE) {
 }
 
 /**
+ * Returns an array of ignored directives by site id.
+ *
+ * @param  int $id The site id.
+ *
+ * @return array
+ *   - updates array List of project names, whose update status we'll ignore.
+ */
+function _prod_monitor_get_site_ignored($id) {
+  $ignored = &drupal_static(__FUNCTION__, array());
+  if (!array_key_exists($id, $ignored)) {
+    $ignored[$id] = module_invoke_all('prod_monitor_ignore', $id) + array(
+      'updates' => array(),
+    );
+  }
+
+  return $ignored[$id];
+}
+
+/**
  * Helper function to get the module status of a site by ID.
  *
  * @param $id
