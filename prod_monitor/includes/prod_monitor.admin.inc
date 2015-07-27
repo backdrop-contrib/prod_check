@@ -197,6 +197,15 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
   $collapsed = FALSE;
 
   if (!$edit) {
+    // Button to initiate our fetch all batcher.
+    $form['fetch_all_submit'] = array(
+      '#weight' => -100,
+      '#type' => 'submit',
+      '#value' => t('Fetch all'),
+      '#submit' => array('prod_monitor_fetch_all_submit'),
+      '#limit_validation_errors' => array(),
+    );
+
     // Add new site situation.
     $sites = _prod_monitor_get_sites();
     $api_key = $url = '';
@@ -521,6 +530,48 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
       }
       break;
   }
+}
+
+/**
+ * Submit handler for the fetch all button.
+ */
+function prod_monitor_fetch_all_submit($form, &$form_state) {
+  $batch = array(
+    'operations' => array(
+      array('prod_monitor_fetch_all_data_batcher', array()),
+    ),
+    'title' => t('Fetching all site data and checking for updates...'),
+    'file' => drupal_get_path('module', 'prod_monitor') . '/includes/prod_monitor.admin.inc',
+  );
+  batch_set($batch);
+}
+
+/**
+ * Batch fetching of all site info.
+ */
+function prod_monitor_fetch_all_data_batcher(&$context) {
+  $sandbox = &$context['sandbox'];
+  if (empty($context['sandbox'])) {
+    $sandbox['sites'] = array_keys(_prod_monitor_get_sites());
+    $sandbox['count'] = count($sandbox['sites']);
+  }
+
+  $id = array_shift($sandbox['sites']);
+
+  // Fetch data from remote.
+  $site_info = _prod_monitor_get_site($id, TRUE);
+  _prod_monitor_retrieve_data($id, $site_info, TRUE);
+
+  // Module update status.
+  $modules = prod_monitor_load($id);
+  if (!empty($modules) && !empty($modules['projects']) && !empty($modules['available'])) {
+    module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.update');
+    _prod_monitor_update_refresh($id, $modules['projects'], $modules['sitekey']);
+    _prod_monitor_calculate_project_data($id, $modules['projects'], $modules['available']);
+  }
+
+  $context['message'] = t('Fetching data from %url', array('%url' => $site_info['url']));
+  $context['finished'] = empty($sandbox['sites']) ? 1 : (1 - count($sandbox['sites']) / $sandbox['count']);
 }
 
 /**
