@@ -226,7 +226,7 @@ function theme_prod_monitor_update_report($variables) {
     if (!empty($rows[$type_name])) {
       ksort($rows[$type_name]);
       $output .= "\n<h3>" . $type_label . "</h3>\n";
-      $output .= theme('table', array('header' => $header, 'rows' => $rows[$type_name], 'attributes' => array('class' => array('update'))));
+      $output .= theme('table', array('prod_monitor_id' => 'update_report', 'header' => $header, 'rows' => $rows[$type_name], 'attributes' => array('class' => array('update'))));
     }
   }
   drupal_add_css(drupal_get_path('module', 'update') . '/update.css');

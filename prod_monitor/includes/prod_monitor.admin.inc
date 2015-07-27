@@ -74,7 +74,7 @@ function _prod_monitor_status_general($prod_mon, $modules) {
       $updates,
     ),
   );
-  $output .= theme('table', array('header' => array(), 'rows' => $rows));
+  $output .= theme('table', array('prod_monitor_id' => 'status_general', 'header' => array(), 'rows' => $rows));
 
   return $output;
 }
@@ -434,7 +434,7 @@ function _prod_monitor_overview_form_table($sites) {
     $rows[] = $row;
   }
 
-  return theme('table', array('header' => $headers, 'rows' => $rows));
+  return theme('table', array('prod_monitor_id' => 'overview_form', 'header' => $headers, 'rows' => $rows));
 }
 
 /**
