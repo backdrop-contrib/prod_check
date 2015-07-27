@@ -71,7 +71,7 @@ function my_module_additional_check($caller = 'internal') {
   $title = 'My modules settings';
   $setting1 = t('Enable debug info');
   $setting2 = t('Disable debug info');
-  $path = 'admin/settings/my-module-settings-page';
+  $path = 'admin/config/system/my-module-settings-page';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }

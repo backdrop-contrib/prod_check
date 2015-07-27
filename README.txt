@@ -123,9 +123,9 @@ Nagios
 ------
 1. Download and install the Nagios module from http://drupal.org/project/nagios
  as per its readme instructions
-2. Enable Nagios support in the prod_check module on /admin/settings/prod-check
+2. Enable Nagios support in the prod_check module on /admin/config/system/prod-check
  by ticking the appropriate box.
-3. Untick the checboxes for those items you do not whish to be monitored by
+3. Untick the checkboxes for those items you do not whish to be monitored by
  Nagios.
 4. Save the settings and you're good to go!
 
