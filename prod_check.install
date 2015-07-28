@@ -35,7 +35,7 @@ function prod_check_requirements($phase) {
         );
       }
       if (function_exists('apc_cache_info') && variable_get('prod_check_apcpass', 'password') == 'password') {
-        $requirements['prod_check_apc'] = array(
+        $requirements['prod_check_apc_opc'] = array(
           'title' => t('Production check'),
           'value' => t('APC password not configured.'),
           'severity' => REQUIREMENT_WARNING,

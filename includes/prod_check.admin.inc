@@ -98,7 +98,7 @@ function prod_check_settings_form($form, &$form_state) {
   $form['prod_check_apc'] = array(
     '#type' => 'fieldset',
     '#title' => t('Advanced APC/OPcache settings'),
-    '#description' => t('These settings are used in the !link functionality.', prod_check_link_array('advanced APC', 'admin/reports/status/apc')),
+    '#description' => t('These settings are used in the !link functionality.', prod_check_link_array('advanced APC', 'admin/reports/status/apc-opc')),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -1031,11 +1031,22 @@ function _prod_check_dbstatus_pgsql($db_name, $details) {
 /**
  * Integration of the APC status page.
  */
-function prod_check_apc() {
-  define('ADMIN_USERNAME', variable_get('prod_check_apcuser', 'apc'));
-  define('ADMIN_PASSWORD', variable_get('prod_check_apcpass', 'password'));
-  include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.apc.inc');
-  exit;
+function prod_check_apc_opc() {
+  // APC.
+  if (function_exists('apc_cache_info')) {
+    define('ADMIN_USERNAME', variable_get('prod_check_apcuser', 'apc'));
+    define('ADMIN_PASSWORD', variable_get('prod_check_apcpass', 'password'));
+    include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.apc.inc');
+    exit;
+  }
+  // OPcache.
+  elseif (function_exists('opcache_get_status')) {
+    include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.opcache.inc');
+    exit;
+  }
+  else {
+    return t('APC nor OPcache is installed on this webserver!');
+  }
 }
 
 /**

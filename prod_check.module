@@ -140,9 +140,9 @@ function prod_check_menu() {
     'page callback' => 'prod_check_dbstatus',
   ) + $admin_defaults;
 
-  $items['admin/reports/status/apc'] = array(
-    'title' => 'APC',
-    'page callback' => 'prod_check_apc',
+  $items['admin/reports/status/apc-opc'] = array(
+    'title' => 'APC/OPcache',
+    'page callback' => 'prod_check_apc_opc',
     'access callback' => 'user_access',
   ) + $admin_defaults;
 
@@ -816,7 +816,7 @@ function _prod_check_apc_opc($caller = 'internal') {
 
   $desc_ok = $desc_nok = '';
   $title = 'APC/OPcache';
-  $path = 'admin/reports/status/apc';
+  $path = 'admin/reports/status/apc-opc';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
