@@ -43,7 +43,7 @@ function prod_check_help($path, $arg) {
       break;
     case 'admin/reports/prod-check':
     case 'admin/reports/prod-check/status':
-      $output .= '<p>'.t('This is an overview of all checks performed by the <em>Production check</em> module and their status. You can click the links inside the report to jump to the module\'s settings page, or to go to the project page of a module, in case you need to download it for installation.').'</p>';
+      $output .= '<p>'.t("This is an overview of all checks performed by the <em>Production check</em> module and their status. You can click the links inside the report to jump to the module's settings page, or to go to the project page of a module, in case you need to download it for installation.").'</p>';
       break;
     case 'admin/config/system/prod-check':
       $output .= '<p><strong>'.t('Sitemail check').'</strong><br />';
@@ -51,12 +51,12 @@ function prod_check_help($path, $arg) {
       $output .= '<p><strong>'.t('Advanced APC settings').'</strong><br />';
       $output .= t('Production check enables a <em>hidden</em> path where you can review your APC setup. This is absolutely unmissable if you want to properly setup APC and tune it specifically for your website.').'</p>';
       $output .= '<p><strong>'.t('Enable XMLRPC API').'</strong><br />';
-      $output .= t('By ticking this box, you open up the module\'s XMLRPC functions so they can be called by the <strong>Production monitor</strong> module for remote monitoring of your site. When enabling XMLRPC, you <strong>must</strong> enter an <strong>API key</strong> to secure the transfer of data. It\'s limited to 128 characters. A mixture of alphanumeric and special characters will increase security.').'</p>';
+      $output .= t("By ticking this box, you open up the module's XMLRPC functions so they can be called by the <strong>Production monitor</strong> module for remote monitoring of your site. When enabling XMLRPC, you <strong>must</strong> enter an <strong>API key</strong> to secure the transfer of data. It's limited to 128 characters. A mixture of alphanumeric and special characters will increase security.").'</p>';
       $output .= '<p><strong>'.t('Report module list every <em>x</em> at time <em>y</em>').'</strong><br />';
       $output .= t('Select on which day of the week and at what time <em>Production check</em> is allowed to pass the module list of the site it is on to <em>Production monitor</em>. Set this carefully, as the amount data being transfered is quite big!').'<br />';
       $output .= t('Depending on when the cron is run on the <em>Production monitor</em> site, the module list will be reported on or maybe even several hours(!) after the time given here!').'</p>';
       $output .= '<p><strong>'.t('Enable Nagios integration').'</strong><br />';
-      $output .= t('By ticking this box, you open up the module\'s Nagios hooks, so that it can interface with the !link module. You will obviously need to install this module next to <em>Production check</em> to enable this functionality.', prod_check_link_array('Nagios', 'http://drupal.org/project/nagios')).'<br />';
+      $output .= t("By ticking this box, you open up the module's Nagios hooks, so that it can interface with the !link module. You will obviously need to install this module next to <em>Production check</em> to enable this functionality.", prod_check_link_array('Nagios', 'http://drupal.org/project/nagios')).'<br />';
       $output .= t('When the checkbox is enabled, a new array of checkboxes will appear, allowing you to specify in detail what will be reported to !link.', prod_check_link_array('Nagios', 'http://drupal.org/project/nagios')).'</p>';
       break;
   }
@@ -263,7 +263,7 @@ function prod_check_xmlrpc() {
         'prod_check.get_settings',
         'prod_check_get_settings',
         array('struct', 'string'),
-        t('Returns a struct containing a form to be displayed on the prod_monitor module\'s settings page for site specific configuration.')
+        t("Returns a struct containing a form to be displayed on the prod_monitor module's settings page for site specific configuration.")
       ),
       array(
         'prod_check.get_data',
@@ -617,7 +617,7 @@ function _prod_check_functions() {
   // Modules
   $functions['modules'] = array(
     'title' => 'Modules',
-    'description' => 'Checks if certain modules are on or off and if they\'re properly configured.',
+    'description' => "Checks if certain modules are on or off and if they're properly configured.",
     'functions' => array(
       '_prod_check_contact' => 'Contact',
       '_prod_check_devel' => 'Devel',
