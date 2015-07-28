@@ -42,7 +42,8 @@ function prod_monitor_status($id) {
 
   // TODO: do not use drupal_render but change this so that hook_page_alter can
   // be used as well.
-  $output .= drupal_render(drupal_get_form('_prod_monitor_update_data_form', $id, $site));
+  $form = drupal_get_form('_prod_monitor_update_data_form', $id, $site);
+  $output .= drupal_render($form);
 
   return $output;
 }
