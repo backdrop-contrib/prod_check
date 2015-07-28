@@ -38,24 +38,25 @@ function prod_monitor_help($path, $arg) {
   $output = '';
   switch ($path) {
     case 'admin/help#prod_monitor':
-      $output .= '<p>'.t('Production monitor is a module that can connect to the <strong>Production check</strong> module using <strong>XMLRPC</strong> and an <strong>API key</strong>. It will retrieve all specified data from the remote site to create a satus page and monitoring facility in a central place.').'<br />';
-      $output .= t('You can add multiple sites and configure per site what data you wish (not) to monitor, allowing you to setup a central Drupal site that will monitor all of your sites that have the <em>Production check</em> module with <em>XMLRPC</em> enabled.').'<br />';
-      $output .= t('The <strong>data retrieval</strong> mechanism can be called <strong>manually</strong> and is integrated with the <strong>cron</strong>, so you get a fresh update of data each cron run.').'</p>';
+      $output .= '<p>' . t('Production monitor is a module that can connect to the <strong>Production check</strong> module using <strong>XMLRPC</strong> and an <strong>API key</strong>. It will retrieve all specified data from the remote site to create a satus page and monitoring facility in a central place.') . '<br />';
+      $output .= t('You can add multiple sites and configure per site what data you wish (not) to monitor, allowing you to setup a central Drupal site that will monitor all of your sites that have the <em>Production check</em> module with <em>XMLRPC</em> enabled.') . '<br />';
+      $output .= t('The <strong>data retrieval</strong> mechanism can be called <strong>manually</strong> and is integrated with the <strong>cron</strong>, so you get a fresh update of data each cron run.') . '</p>';
       break;
     case 'admin/reports/prod-monitor':
-      $output .= '<p><strong>'.t('Site overview table').'</strong><br />';
-      $output .= t('The overview table gives you an overview of what sites you have added together with their status. The status will be the highest error detected in the retrieved data set.').'<br />';
-      $output .= t('The per site functions <strong>View</strong>, <strong>Edit</strong>, <strong>Fetch data</strong>, <strong>Flush</strong> and <strong>Delete</strong> should be self explanatory.').'</p>';
+      $output .= '<p><strong>' . t('Site overview table') . '</strong><br />';
+      $output .= t('The overview table gives you an overview of what sites you have added together with their status. The status will be the highest error detected in the retrieved data set.') . '<br />';
+      $output .= t('The per site functions <strong>View</strong>, <strong>Edit</strong>, <strong>Fetch data</strong>, <strong>Flush</strong> and <strong>Delete</strong> should be self explanatory.') . '</p>';
       // No break!
     case 'admin/reports/prod-monitor/site/%/edit':
-      $output .= '<p><strong>'.t('Website URL & API key').'</strong><br />';
-      $output .= t("To add a site, enter it's <strong>full url</strong>, including the protocol, but omitting the <em>xmlrpc.php</em> part and the <strong>API key</strong> that you have configured for it using the <strong>Production check</strong> module. Now click the <strong>Get settings</strong> button.").'<br />';
-      $output .= t('All of the checks that the <em>Production check</em> module can perform are fetched from the remote site and presented as an array of checkboxes. Finally you can configure what exactly you wish to monitor for this site, then hit the <strong>Add site</strong> button.').'<br />';
-      $output .= t('Each time you edit a site, the settings are fetched from the remote server so that any new checks that might have been added to the <em>Production check</em> module there are always up to date in the monitoring section.').'<br />';      $output .= t('<strong>Fetch data immediately</strong> does exactly what it says and fetches all the configured data from the remote site and will direct you to the report page.').'</p>';
+      $output .= '<p><strong>' . t('Website URL & API key') . '</strong><br />';
+      $output .= t("To add a site, enter it's <strong>full url</strong>, including the protocol, but omitting the <em>xmlrpc.php</em> part and the <strong>API key</strong> that you have configured for it using the <strong>Production check</strong> module. Now click the <strong>Get settings</strong> button.") . '<br />';
+      $output .= t('All of the checks that the <em>Production check</em> module can perform are fetched from the remote site and presented as an array of checkboxes. Finally you can configure what exactly you wish to monitor for this site, then hit the <strong>Add site</strong> button.') . '<br />';
+      $output .= t('Each time you edit a site, the settings are fetched from the remote server so that any new checks that might have been added to the <em>Production check</em> module there are always up to date in the monitoring section.') . '<br />';
+      $output .= t('<strong>Fetch data immediately</strong> does exactly what it says and fetches all the configured data from the remote site and will direct you to the report page.') . '</p>';
       break;
     case 'admin/reports/prod-monitor/site/%':
     case 'admin/reports/prod-monitor/site/%/view':
-      $output .= '<p>'.t("This is an overview of all checks performed by the <em>Production check</em> module and their status <strong>on the remote site</strong>. You can click the links inside the report to jump to the module's settings page, or to go to the project page of a module, in case you need to download it for installation.").'</p>';
+      $output .= '<p>' . t("This is an overview of all checks performed by the <em>Production check</em> module and their status <strong>on the remote site</strong>. You can click the links inside the report to jump to the module's settings page, or to go to the project page of a module, in case you need to download it for installation.") . '</p>';
       break;
   }
   return $output;

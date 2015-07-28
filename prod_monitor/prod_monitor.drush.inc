@@ -64,14 +64,14 @@ function drush_prod_monitor_fetch() {
       $result = _prod_monitor_retrieve_data($arg, $site);
       $site['url'] = _prod_monitor_sanitize_url(rtrim($site['url'], '/'));
       if ($result === FALSE) {
-        drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to fetch data for').' '.$site['url'].'!');
+        drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('Unable to fetch data for') . ' ' . $site['url'] . '!');
       }
       else {
-        drush_print(dt('Sucessfully fetched data for').' '.$site['url'].'.');
+        drush_print(dt('Sucessfully fetched data for') . ' ' . $site['url'] . '.');
       }
     }
     else {
-      drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('No site found with ID').' '.$arg.'!');
+      drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('No site found with ID') . ' ' . $arg . '!');
     }
   }
 }
@@ -84,19 +84,19 @@ function drush_prod_monitor_flush() {
   foreach ($args as $arg) {
     $url = _prod_monitor_get_url($arg);
     if (!empty($url)) {
-      if (!drush_confirm(dt('Do you really want to flush all data for').' '.$url.'?')) {
+      if (!drush_confirm(dt('Do you really want to flush all data for') . ' ' . $url . '?')) {
         drush_die('Aborting.');
       }
       $result = _prod_monitor_flush_data($arg);
       if ($result === FALSE) {
-        drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to flush data!'));
+        drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('Unable to flush data!'));
       }
       else {
         drush_print(dt('Stored data successfully flushed.'));
       }
     }
     else {
-      drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('No site found with ID').' '.$arg.'!');
+      drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('No site found with ID') . ' ' . $arg . '!');
     }
   }
 }
@@ -109,19 +109,19 @@ function drush_prod_monitor_delsite() {
   foreach ($args as $arg) {
     $url = _prod_monitor_get_url($arg);
     if (!empty($url)) {
-      if (!drush_confirm(dt("Do you really want to delete").' '.$url.' '.dt('and all its data?'))) {
+      if (!drush_confirm(dt("Do you really want to delete") . ' ' . $url . ' ' . dt('and all its data?'))) {
         drush_die('Aborting.');
       }
       $result = _prod_monitor_delete_site($arg);
       if ($result === FALSE) {
-        drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('Unable to delete') . $url .'!');
+        drush_print("\033[1;31m" . dt('Error:') . " \033[0m" . dt('Unable to delete') . $url . '!');
       }
       else {
         drush_print(dt('Website successfully deleted.'));
       }
     }
     else {
-      drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('No site found with ID').' '.$arg.'!');
+      drush_print("\033[1;31m" . dt('Error:') . " \033[0m" . dt('No site found with ID') . ' ' . $arg . '!');
     }
   }
 }
@@ -168,10 +168,10 @@ function _drush_prod_monitor_overview() {
       (!$site_info['data']) ? dt('Empty') : t('Stored'),
       $site_info['added'],
       (!$site_info['lastupdate']) ? dt('Not yet updated') : $site_info['lastupdate'],
-      "\033[".$severity[$site_info['status']].'m'.ucwords($site_info['status'])."\033[0m",
+      "\033[" . $severity[$site_info['status']] . 'm' . ucwords($site_info['status']) . "\033[0m",
     );
   }
-  drush_print("\033[1m".dt('Production Monitor status')."\033[0m\n", 1);
+  drush_print("\033[1m" . dt('Production Monitor status') . "\033[0m\n", 1);
   if (count($rows) > 1) {
     drush_print_table($rows, TRUE);
     drush_print(dt('Use drush prod-monitor [id] to view the details of a specific site.'));
@@ -184,7 +184,7 @@ function _drush_prod_monitor_overview() {
 function _drush_prod_monitor_detail($id) {
   $site = _prod_monitor_get_site($id, TRUE);
   if (!isset($site['url'])) {
-    drush_print("\033[1;31m".dt('Error:')." \033[0m".dt('No site found with ID').' '.$id.'!');
+    drush_print("\033[1;31m" . dt('Error:') . " \033[0m" . dt('No site found with ID') . ' ' . $id . '!');
     return;
   }
 
@@ -219,7 +219,7 @@ function _drush_prod_monitor_detail($id) {
     $updates = $color . $title . "\033[0m";
 
     // Construct block
-    $block[] = array("\033[1m".dt('Overall status')."\033[0m");
+    $block[] = array("\033[1m" . dt('Overall status')."\033[0m");
     $block[] = array(
       dt('Drupal core version'),
       $modules['projects']['drupal']['info']['version'],
@@ -254,12 +254,12 @@ function _drush_prod_monitor_detail($id) {
   foreach ($functions as $set => $data) {
     if (isset($site['data'][$set])) {
       $rows[] = array('');
-      $rows[] = array("\033[1m".dt($data['title'])."\033[0m");
+      $rows[] = array("\033[1m" . dt($data['title'])."\033[0m");
       if (!empty($site['data'][$set])) {
         foreach ($site['data'][$set] as $check => $result) {
           $rows[] = array(
             $result['title'],
-            "\033[".$severity[$result['severity']].'m'.strip_tags($result['value'])."\033[0m",
+            "\033[" . $severity[$result['severity']] . 'm' . strip_tags($result['value'])."\033[0m",
           );
           if ($error < $result['severity']) {
             $error = $result['severity'];
@@ -273,7 +273,7 @@ function _drush_prod_monitor_detail($id) {
   }
 
   // Actual printing.
-  drush_print("\033[1m".dt('Production Monitor status for').' '._prod_monitor_sanitize_url($url)."\033[0m", 1);
+  drush_print("\033[1m" . dt('Production Monitor status for') . ' ' . _prod_monitor_sanitize_url($url) . "\033[0m", 1);
   if (!empty($block)) {
     drush_print_table($block);
   }
@@ -286,7 +286,7 @@ function _drush_prod_monitor_detail($id) {
   if ($error > 0) {
     // Would be cool if we could prefix the admin path with http://<host>/ so it
     // will become a clickable link in some terminals. Any ideas?
-    drush_print("\033[1m".dt('Some errors were reported!')."\033[0m ".dt('Check the full status page on')." \033[1m".'admin/reports/prod-monitor/'.$id.'/view'."\033[0m ".dt('for details.'));
+    drush_print("\033[1m" . dt('Some errors were reported!') . "\033[0m " . dt('Check the full status page on') . " \033[1m" . 'admin/reports/prod-monitor/' . $id . '/view' . "\033[0m " . dt('for details.'));
   }
 }
 
@@ -306,16 +306,16 @@ function _drush_prod_monitor_updates() {
   $url = _prod_monitor_get_url($id);
   if (empty($modules)) {
     if (empty($url)) {
-      drush_set_error('prod_monitor', dt('No site found with ID').' '. $id .'!');
+      drush_set_error('prod_monitor', dt('No site found with ID') . ' ' . $id . '!');
       return;
     }
     else {
-      drush_set_error('prod_monitor', dt('No module data found for') .' '. $url.'!');
+      drush_set_error('prod_monitor', dt('No module data found for') . ' '. $url . '!');
       return;
     }
   }
   elseif (empty($modules['available'])) {
-    drush_set_error('prod_monitor', dt('No update data found for') .' '. $url.'!');
+    drush_set_error('prod_monitor', dt('No update data found for') . ' ' . $url . '!');
     // No data, ask for refresh.
     _drush_prod_monitor_update_refresh($id, $modules);
   }
@@ -353,8 +353,8 @@ function _drush_prod_monitor_updates() {
     $updateable = FALSE;
   }
 
-  drush_print("\033[1m".dt('Module update status for').' '.$url."\033[0m", 1);
-  drush_print(dt('Update information last refreshed:') .' '. ($last  ? format_date($last) : dt('Never'))."\n", 1);
+  drush_print("\033[1m" . dt('Module update status for') . ' ' . $url . "\033[0m", 1);
+  drush_print(dt('Update information last refreshed:') . ' ' . ($last  ? format_date($last) : dt('Never')) . "\n", 1);
   drush_print_table($rows, TRUE);
 }
 
@@ -375,7 +375,7 @@ function _drush_prod_monitor_update_refresh($id, &$modules) {
       $modules['lastupdate'] = time();
     }
     else {
-      drush_set_error('prod_monitor', dt('Failed to refres update status information for') .' '. $url.'!');
+      drush_set_error('prod_monitor', dt('Failed to refres update status information for') . ' ' . $url . '!');
       drush_die('Aborting.');
     }
   }

@@ -293,7 +293,7 @@ function prod_check_settings_form($form, &$form_state) {
             '!settings' => l(t('Nagios page callback'), 'admin/config/system/nagios'),
             '%callback' => 'prod_check_nagios_status_page',
           )
-        ) .'</p>',
+        ) . '</p>',
       );
 
       $form['prod_check_nagios']['nagios']['settings']['prod_check_nagios_verbose'] = array(
