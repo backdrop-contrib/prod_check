@@ -1757,6 +1757,10 @@ function _prod_check_metatag($caller = 'internal') {
 }
 
 function _prod_check_page_title($caller = 'internal') {
+  if (module_exists('metatag')) {
+    return;
+  }
+
   $check = array();
   $error = FALSE;
   $pager = variable_get('page_title_pager_pattern', '');
@@ -1773,7 +1777,7 @@ function _prod_check_page_title($caller = 'internal') {
   if (!module_exists('page_title')) {
     $error = TRUE;
     $value_nok = t('Disabled');
-    $msg_nok = t('You have not enabled the !link module. This module can help out with problems such as pages with paging being marked as duplicate content by search engines.', prod_check_link_array($title, 'http://drupal.org/project/page_title'));
+    $msg_nok = t('You have not enabled the !link (or equivalent) module. This module can help out with problems such as pages with paging being marked as duplicate content by search engines.', prod_check_link_array($title, 'http://drupal.org/project/page_title'));
   }
   else if (empty($pager)) {
     $error = TRUE;
