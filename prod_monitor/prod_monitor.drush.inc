@@ -22,7 +22,7 @@ function prod_monitor_drush_command() {
       'id' => 'ID of the site to view module updates for.',
     ),
     'options' => array(
-      '--check' => 'Check for module updates.'
+      'check' => 'Check for module updates.',
     ),
   );
   $items['prod-monitor-fetch'] = array(
