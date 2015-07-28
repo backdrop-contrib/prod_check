@@ -97,7 +97,7 @@ function prod_check_settings_form($form, &$form_state) {
 
   $form['prod_check_apc'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Advanced APC settings'),
+    '#title' => t('Advanced APC/OPcache settings'),
     '#description' => t('These settings are used in the !link functionality.', prod_check_link_array('advanced APC', 'admin/reports/status/apc')),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
@@ -106,7 +106,7 @@ function prod_check_settings_form($form, &$form_state) {
   // Cache full count threshold
   $form['prod_check_apc']['prod_check_apc_expunge'] = array(
     '#type' => 'textfield',
-    '#title' => t('APC cache full count threshold'),
+    '#title' => t('APC/OPcache cache full count threshold'),
     '#default_value' => variable_get('prod_check_apc_expunge', 0),
     '#size' => 2,
     '#description' => t('Issue a critical error when the cache full count is greater than the number entered here.'),
@@ -428,7 +428,7 @@ function prod_check_settings_form_validate($form, &$form_state) {
   }
 
   if (!is_numeric($form_state['values']['prod_check_apc_expunge'])) {
-    form_set_error('prod_check_apc_expunge', t('APC Cache full count threshold should be numeric!'));
+    form_set_error('prod_check_apc_expunge', t('APC/OPcache Cache full count threshold should be numeric!'));
   }
 
   if (isset($form_state['values']['prod_check_enable_nagios']) && $form_state['values']['prod_check_enable_nagios']) {
@@ -463,7 +463,7 @@ function prod_check_settings_form_submit($form, &$form_state) {
       // PHP errors.
       variable_set('prod_check_dblog_php', $form_state['values']['prod_check_dblog_php']);
       variable_set('prod_check_dblog_php_threshold', $form_state['values']['prod_check_dblog_php_threshold']);
-      // APC.
+      // APC/OPcache.
       variable_set('prod_check_apc_expunge', $form_state['values']['prod_check_apc_expunge']);
       variable_set('prod_check_apcuser', $form_state['values']['prod_check_apcuser']);
       if (!empty($form_state['values']['prod_check_apcpass'])) {

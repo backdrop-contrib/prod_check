@@ -48,7 +48,7 @@ function prod_check_help($path, $arg) {
     case 'admin/config/system/prod-check':
       $output .= '<p><strong>'.t('Sitemail check').'</strong><br />';
       $output .= t('The value entered here is used in a regular expression. Prod check will use it to see if the e-mail address you have entered in <em>Site information</em> is no longer a development e-mail address.').'</p>';
-      $output .= '<p><strong>'.t('Advanced APC settings').'</strong><br />';
+      $output .= '<p><strong>'.t('Advanced APC/OPcache settings').'</strong><br />';
       $output .= t('Production check enables a <em>hidden</em> path where you can review your APC setup. This is absolutely unmissable if you want to properly setup APC and tune it specifically for your website.').'</p>';
       $output .= '<p><strong>'.t('Enable XMLRPC API').'</strong><br />';
       $output .= t("By ticking this box, you open up the module's XMLRPC functions so they can be called by the <strong>Production monitor</strong> module for remote monitoring of your site. When enabling XMLRPC, you <strong>must</strong> enter an <strong>API key</strong> to secure the transfer of data. It's limited to 128 characters. A mixture of alphanumeric and special characters will increase security.").'</p>';
@@ -582,7 +582,7 @@ function _prod_check_functions() {
     'title' => 'Server',
     'description' => 'Checks certain server side parameters such as APC.',
     'functions' => array(
-      '_prod_check_apc' => 'APC',
+      '_prod_check_apc_opc' => 'APC/OPcache',
       '_prod_check_dblog_php' => 'PHP errors',
       '_prod_check_release_notes' => 'Release notes',
     ),
@@ -811,30 +811,50 @@ function _prod_check_poormanscron($caller = 'internal') {
 // --- SERVER ---
 
 // APC check
-function _prod_check_apc($caller = 'internal') {
+function _prod_check_apc_opc($caller = 'internal') {
   $check = array();
 
   $desc_ok = $desc_nok = '';
-  $title = 'APC';
+  $title = 'APC/OPcache';
   $path = 'admin/reports/status/apc';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  if (!function_exists('apc_cache_info')) {
+  $cache = array();
+
+  if (!function_exists('apc_cache_info') && !function_exists('opcache_get_status')) {
     $desc_nok = t('!link does not appear to be running.', prod_check_link_array($title, $path));
     $val_nok = t('Disabled');
     $error = TRUE;
   }
-  else if ($cache = @apc_cache_info('opcode')) {
+  elseif (function_exists('apc_cache_info')) {
+    $cache = @apc_cache_info('opcode');
+  }
+  elseif (function_exists('opcache_get_status')) {
+    $opc_cache = @opcache_get_status();
+    if ($opc_cache && $opc_cache['opcache_enabled']) {
+      $cache['num_hits'] = $opc_cache['opcache_statistics']['hits'];
+      $cache['num_misses'] = $opc_cache['opcache_statistics']['misses'];
+      // TODO: Should we make the sum of these two or check separately?
+      $cache['expunges'] = $opc_cache['opcache_statistics']['oom_restarts'] + $opc_cache['opcache_statistics']['hash_restarts'];
+    }
+    else {
+      $desc_nok = t('!link does not appear to be running.', prod_check_link_array($title, $path));
+      $val_nok = t('Disabled');
+      $error = TRUE;
+    }
+  }
+
+  if (!empty($cache)) {
     $apc_expunge = variable_get('prod_check_apc_expunge', 0);
-    $detailed_info = ': '.t('hits').': '.$cache['num_hits'].', '.t('misses').': '.$cache['num_misses'].', '.t('cache full count').': '.$cache['expunges'].'.';
+    $detailed_info = ': ' . t('hits') . ': ' . $cache['num_hits'] . ', ' . t('misses') . ': ' . $cache['num_misses'] . ', ' . t('cache full count') . ': ' . $cache['expunges'] . '.';
     if ($cache['num_misses'] >= $cache['num_hits']) {
       $desc_nok = t('!link not properly configured, too many misses', prod_check_link_array($title, $path)) . $detailed_info;
       $val_nok = t('Not functioning properly.');
       $error = TRUE;
     }
-    else if ($cache['expunges'] > $apc_expunge) {
+    elseif ($cache['expunges'] > $apc_expunge) {
       $desc_nok = t('!link not properly configured, cache size too small', prod_check_link_array($title, $path)) . $detailed_info;
       $val_nok = t('Not functioning properly.');
       $error = TRUE;
@@ -851,7 +871,7 @@ function _prod_check_apc($caller = 'internal') {
     $error = TRUE;
   }
 
-  $check['prod_check_apc'] = array(
+  $check['prod_check_apc_opc'] = array(
     '#title' => t($title),
     '#state' => !$error,
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR,
