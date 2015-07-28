@@ -264,7 +264,7 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
 
   $form['sites']['api_key'] = array(
     '#type' => 'textfield',
-    '#title' => t('The website\'s API key'),
+    '#title' => t("The website's API key"),
     '#default_value' => $api_key,
     '#description' => t('Enter the API key you have configured for this site using the <em>Production check</em> module.'),
     '#size' => 60,

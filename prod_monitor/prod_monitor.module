@@ -49,13 +49,13 @@ function prod_monitor_help($path, $arg) {
       // No break!
     case 'admin/reports/prod-monitor/site/%/edit':
       $output .= '<p><strong>'.t('Website URL & API key').'</strong><br />';
-      $output .= t('To add a site, enter it\'s <strong>full url</strong>, including the protocol, but omitting the <em>xmlrpc.php</em> part and the <strong>API key</strong> that you have configured for it using the <strong>Production check</strong> module. Now click the <strong>Get settings</strong> button.').'<br />';
+      $output .= t("To add a site, enter it's <strong>full url</strong>, including the protocol, but omitting the <em>xmlrpc.php</em> part and the <strong>API key</strong> that you have configured for it using the <strong>Production check</strong> module. Now click the <strong>Get settings</strong> button.").'<br />';
       $output .= t('All of the checks that the <em>Production check</em> module can perform are fetched from the remote site and presented as an array of checkboxes. Finally you can configure what exactly you wish to monitor for this site, then hit the <strong>Add site</strong> button.').'<br />';
       $output .= t('Each time you edit a site, the settings are fetched from the remote server so that any new checks that might have been added to the <em>Production check</em> module there are always up to date in the monitoring section.').'<br />';      $output .= t('<strong>Fetch data immediately</strong> does exactly what it says and fetches all the configured data from the remote site and will direct you to the report page.').'</p>';
       break;
     case 'admin/reports/prod-monitor/site/%':
     case 'admin/reports/prod-monitor/site/%/view':
-      $output .= '<p>'.t('This is an overview of all checks performed by the <em>Production check</em> module and their status <strong>on the remote site</strong>. You can click the links inside the report to jump to the module\'s settings page, or to go to the project page of a module, in case you need to download it for installation.').'</p>';
+      $output .= '<p>'.t("This is an overview of all checks performed by the <em>Production check</em> module and their status <strong>on the remote site</strong>. You can click the links inside the report to jump to the module's settings page, or to go to the project page of a module, in case you need to download it for installation.").'</p>';
       break;
   }
   return $output;
