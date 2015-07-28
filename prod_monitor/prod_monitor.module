@@ -13,8 +13,9 @@ define('PROD_MONITOR_REQUIREMENT_WARNING', 1);
 define('PROD_MONITOR_REQUIREMENT_ERROR', 2);
 
 /**
- * We do the same here for the update module constants: redefine them so that we
- * do not need to run the update module entirely!
+ * We don't want to load the Update module just to be able to run Production
+ * Monitor, so we copy the constants from Update. But we need to check them all
+ * so that we don't get notices if Update is already running.
  */
 if (!module_exists('update')) {
   define('UPDATE_DEFAULT_URL', 'http://updates.drupal.org/release-history');
