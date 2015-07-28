@@ -65,7 +65,7 @@ function _prod_monitor_update_refresh($id, $projects, $site_key) {
       }
     }
     $modules->available = serialize($available);
-    watchdog('prod_monitor', 'Attempted to fetch information about all available new releases and updates for %link.', array('%link' => _prod_monitor_get_url($id)), WATCHDOG_NOTICE, l(t('view'), 'admin/reports/prod-monitor/site/' . $id . '/view/updates'));
+    watchdog('prod_monitor', 'Fetched information about all available new releases and updates for %link.', array('%link' => _prod_monitor_get_url($id)), WATCHDOG_NOTICE, l(t('view'), 'admin/reports/prod-monitor/site/' . $id . '/view/updates'));
   }
   else {
     watchdog('prod_monitor', 'Unable to fetch any information about available new releases and updates for %link.', array('%link' => _prod_monitor_get_url($id)), WATCHDOG_ERROR, l(t('view'), 'admin/reports/prod-monitor/site/' . $id . '/view/updates'));

@@ -537,11 +537,27 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
  * Submit handler for the fetch all button.
  */
 function prod_monitor_fetch_all_submit($form, &$form_state) {
+  _prod_monitor_fetch_all_data_batcher_create();
+}
+
+/**
+ * Function to create the batch process. Also used in Drush!
+ */
+function _prod_monitor_fetch_all_data_batcher_create($fetch_only = FALSE, $update_only = FALSE, $msg = TRUE) {
+  $title = t('Fetching all site data and checking for updates...');
+
+  if ($fetch_only) {
+    $title = t('Fetching all site data...');
+  }
+  if ($update_only) {
+    $title = t('Checking for updates...');
+  }
+
   $batch = array(
     'operations' => array(
-      array('prod_monitor_fetch_all_data_batcher', array()),
+      array('prod_monitor_fetch_all_data_batcher', array($fetch_only, $update_only, $msg)),
     ),
-    'title' => t('Fetching all site data and checking for updates...'),
+    'title' => $title,
     'file' => drupal_get_path('module', 'prod_monitor') . '/includes/prod_monitor.admin.inc',
   );
   batch_set($batch);
@@ -550,28 +566,33 @@ function prod_monitor_fetch_all_submit($form, &$form_state) {
 /**
  * Batch fetching of all site info.
  */
-function prod_monitor_fetch_all_data_batcher(&$context) {
+function prod_monitor_fetch_all_data_batcher($fetch_only, $update_only, $msg, &$context) {
   $sandbox = &$context['sandbox'];
   if (empty($context['sandbox'])) {
     $sandbox['sites'] = array_keys(_prod_monitor_get_sites());
     $sandbox['count'] = count($sandbox['sites']);
   }
 
+  // Get site info.
   $id = array_shift($sandbox['sites']);
-
-  // Fetch data from remote.
   $site_info = _prod_monitor_get_site($id, TRUE);
-  _prod_monitor_retrieve_data($id, $site_info, TRUE);
 
-  // Module update status.
-  $modules = prod_monitor_load($id);
-  if (!empty($modules) && !empty($modules['projects']) && !empty($modules['available'])) {
-    module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.update');
-    _prod_monitor_update_refresh($id, $modules['projects'], $modules['sitekey']);
-    _prod_monitor_calculate_project_data($id, $modules['projects'], $modules['available']);
+  if (!$update_only) {
+    // Fetch data from remote.
+    _prod_monitor_retrieve_data($id, $site_info, $msg);
   }
 
-  $context['message'] = t('Fetching data from %url', array('%url' => $site_info['url']));
+  if (!$fetch_only) {
+    // Module update status.
+    $modules = prod_monitor_load($id);
+    if (!empty($modules) && !empty($modules['projects'])) {
+      module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.update');
+      _prod_monitor_update_refresh($id, $modules['projects'], $modules['sitekey']);
+      _prod_monitor_calculate_project_data($id, $modules['projects'], $modules['available']);
+    }
+  }
+
+  $context['message'] = t('Updating data for %url', array('%url' => $site_info['url']));
   $context['finished'] = empty($sandbox['sites']) ? 1 : (1 - count($sandbox['sites']) / $sandbox['count']);
 }
 

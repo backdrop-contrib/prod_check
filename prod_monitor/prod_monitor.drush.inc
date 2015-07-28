@@ -15,7 +15,7 @@ function prod_monitor_drush_command() {
     ),
   );
   $items['prod-monitor-updates'] = array(
-    'callback' => '_drush_prod_monitor_updates',
+    'callback' => 'drush_prod_monitor_updates',
     'description' => 'Display the update module status page',
     'aliases' => array('pmon-up'),
     'arguments' => array(
@@ -58,20 +58,37 @@ function prod_monitor_drush_command() {
  */
 function drush_prod_monitor_fetch() {
   $args = func_get_args();
-  foreach($args as $arg) {
-    $site = _prod_monitor_get_site($arg);
-    if (!empty($site['url'])) {
-      $result = _prod_monitor_retrieve_data($arg, $site);
-      $site['url'] = _prod_monitor_sanitize_url(rtrim($site['url'], '/'));
-      if ($result === FALSE) {
-        drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('Unable to fetch data for') . ' ' . $site['url'] . '!');
-      }
-      else {
-        drush_print(dt('Sucessfully fetched data for') . ' ' . $site['url'] . '.');
-      }
+
+  // Fetch ALL.
+  if (empty($args)) {
+    if (!drush_confirm(dt('Do you really want to fetch the data for ALL remote sites?'))) {
+      drush_set_error('prod_monitor', dt('Aborting.'));
+      return;
     }
     else {
-      drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('No site found with ID') . ' ' . $arg . '!');
+      module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.admin');
+      // Batch process data fetching.
+      _prod_monitor_fetch_all_data_batcher_create(TRUE, FALSE, FALSE);
+      drush_backend_batch_process();
+    }
+  }
+  // Fetch one or more sites as requested.
+  else {
+    foreach($args as $arg) {
+      $site = _prod_monitor_get_site($arg);
+      if (!empty($site['url'])) {
+        $result = _prod_monitor_retrieve_data($arg, $site);
+        $site['url'] = _prod_monitor_sanitize_url(rtrim($site['url'], '/'));
+        if ($result === FALSE) {
+          drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('Unable to fetch data for') . ' ' . $site['url'] . '!');
+        }
+        else {
+          drush_print(dt('Sucessfully fetched data for') . ' ' . $site['url'] . '.');
+        }
+      }
+      else {
+        drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('No site found with ID') . ' ' . $arg . '!');
+      }
     }
   }
 }
@@ -293,69 +310,82 @@ function _drush_prod_monitor_detail($id) {
 /**
  * Update status page callback.
  */
-function _drush_prod_monitor_updates() {
+function drush_prod_monitor_updates() {
   $id = func_get_args();
-  if (empty($id)) {
-    drush_set_error('prod_monitor', dt('You must provide a site ID!'));
-    return;
-  }
-  $id = $id['0'];
 
-  // Get module info.
-  $modules = _prod_monitor_get_site_modules($id);
-  $url = _prod_monitor_get_url($id);
-  if (empty($modules)) {
-    if (empty($url)) {
-      drush_set_error('prod_monitor', dt('No site found with ID') . ' ' . $id . '!');
+  // Fetch ALL.
+  if (empty($id)) {
+    if (!drush_confirm(dt('Do you really want to check ALL sites for module updates?'))) {
+      drush_set_error('prod_monitor', dt('Aborting.'));
       return;
     }
     else {
-      drush_set_error('prod_monitor', dt('No module data found for') . ' '. $url . '!');
-      return;
+      module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.admin');
+      // Batch process update checking.
+      _prod_monitor_fetch_all_data_batcher_create(FALSE, TRUE, FALSE);
+      drush_backend_batch_process();
     }
   }
-  elseif (empty($modules['available'])) {
-    drush_set_error('prod_monitor', dt('No update data found for') . ' ' . $url . '!');
-    // No data, ask for refresh.
-    _drush_prod_monitor_update_refresh($id, $modules);
-  }
+  // Fetch one or more sites as requested.
+  else {
+    $id = $id['0'];
 
-  // Refresh if user asked for it.
-  if (drush_get_option('check')) {
-    _drush_prod_monitor_update_refresh($id, $modules);
-  }
-
-  $last = $modules['lastupdate'];
-  module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.update');
-  $projects = _prod_monitor_calculate_project_data($id, $modules['projects'], $modules['available']);
-  // Cleanup.
-  unset($modules);
-
-  // Table headers.
-  $rows[] = array(dt('Name'), dt('Installed version'), dt('Proposed version'), dt('Status'));
-
-  // Process releases, notifying user of status and building a list of proposed updates
-  drush_include_engine('update_info', 'drupal', NULL, DRUSH_BASE_PATH . '/commands/pm/update_info');
-  drush_include(DRUSH_BASE_PATH . '/commands/pm', 'updatecode.pm');
-  $updateable = pm_project_filter($projects, $rows);
-
-  // Pipe preparation
-  if (drush_get_context('DRUSH_PIPE')) {
-    $pipe = "";
-    foreach($projects as $project){
-      $pipe .= $project['name']. " ";
-      $pipe .= $project['existing_version']. " ";
-      $pipe .= $project['candidate_version']. " ";
-      $pipe .= str_replace(' ', '-', pm_update_filter($project)). "\n";
+    // Get module info.
+    $modules = _prod_monitor_get_site_modules($id);
+    $url = _prod_monitor_get_url($id);
+    if (empty($modules)) {
+      if (empty($url)) {
+        drush_set_error('prod_monitor', dt('No site found with ID') . ' ' . $id . '!');
+        return;
+      }
+      else {
+        drush_set_error('prod_monitor', dt('No module data found for') . ' '. $url . '!');
+        return;
+      }
     }
-    drush_print_pipe($pipe);
-    // Automatically curtail update process if in pipe mode
-    $updateable = FALSE;
-  }
+    elseif (empty($modules['available'])) {
+      drush_set_error('prod_monitor', dt('No update data found for') . ' ' . $url . '!');
+      // No data, ask for refresh.
+      _drush_prod_monitor_update_refresh($id, $modules);
+    }
 
-  drush_print("\033[1m" . dt('Module update status for') . ' ' . $url . "\033[0m", 1);
-  drush_print(dt('Update information last refreshed:') . ' ' . ($last  ? format_date($last) : dt('Never')) . "\n", 1);
-  drush_print_table($rows, TRUE);
+    // Refresh if user asked for it.
+    if (drush_get_option('check')) {
+      _drush_prod_monitor_update_refresh($id, $modules);
+    }
+
+    $last = $modules['lastupdate'];
+    module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.update');
+    $projects = _prod_monitor_calculate_project_data($id, $modules['projects'], $modules['available']);
+    // Cleanup.
+    unset($modules);
+
+    // Table headers.
+    $rows[] = array(dt('Name'), dt('Installed version'), dt('Proposed version'), dt('Status'));
+
+    // Process releases, notifying user of status and building a list of proposed updates
+    drush_include_engine('update_info', 'drupal', NULL, DRUSH_BASE_PATH . '/commands/pm/update_info');
+    drush_include(DRUSH_BASE_PATH . '/commands/pm', 'updatecode.pm');
+    $updateable = pm_project_filter($projects, $rows);
+
+    // Pipe preparation
+    if (drush_get_context('DRUSH_PIPE')) {
+      $pipe = "";
+      foreach($projects as $project){
+        $pipe .= $project['name']. " ";
+        $pipe .= $project['existing_version']. " ";
+        $pipe .= $project['candidate_version']. " ";
+        $pipe .= str_replace(' ', '-', pm_update_filter($project)). "\n";
+      }
+      drush_print_pipe($pipe);
+      // Automatically curtail update process if in pipe mode
+      $updateable = FALSE;
+    }
+
+    drush_print("\033[1m" . dt('Module update status for') . ' ' . $url . "\033[0m", 1);
+    drush_print(dt('Update information last refreshed:') . ' ' . ($last  ? format_date($last) : dt('Never')) . "\n", 1);
+    drush_print_table($rows, TRUE);
+  }
 }
 
 /**
