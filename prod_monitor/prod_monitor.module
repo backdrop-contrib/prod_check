@@ -369,7 +369,7 @@ function _prod_monitor_retrieve_functions($url, $api_key, $msg = TRUE) {
       'error'
     );
   }
-  else if ($msg) {
+  elseif ($msg) {
     drupal_set_message(t('Settings form updated, please adjust your settings.'));
   }
 
@@ -471,7 +471,7 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
             );
           }
         }
-        else if ($msg) {
+        elseif ($msg) {
           drupal_set_message(t('Module data for %link successfully updated.', array('%link' => $site_info['url'])));
         }
       }
@@ -497,7 +497,7 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
               );
             }
           }
-          else if ($msg) {
+          elseif ($msg) {
             drupal_set_message(t('Performance data for %link successfully updated.', array('%link' => $site_info['url'])));
           }
         }

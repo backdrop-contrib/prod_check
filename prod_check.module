@@ -521,7 +521,7 @@ function prod_check_execute_check($checks, $caller, $compatibility = 'all') {
     }
   }
   // Special stuff here, only compatible with prod_monitor!
-  else if (is_array($checks) && $compatibility == 'prod_mon') {
+  elseif (is_array($checks) && $compatibility == 'prod_mon') {
     $result = $checks;
   }
 
@@ -1707,7 +1707,7 @@ function _prod_check_googleanalytics($caller = 'internal') {
     $value_nok = t('Disabled');
     $msg_nok = t('You have not enabled the !link module. If you wish to track and optimise your site !link is absolutely necessary.', prod_check_link_array($title, 'http://drupal.org/project/google_analytics'));
   }
-  else if (empty($ga_account) || $ga_account == 'UA-') {
+  elseif (empty($ga_account) || $ga_account == 'UA-') {
     $error = TRUE;
     $severity = ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR;
     $value_nok = t('Not properly configured.');
@@ -1779,7 +1779,7 @@ function _prod_check_page_title($caller = 'internal') {
     $value_nok = t('Disabled');
     $msg_nok = t('You have not enabled the !link (or equivalent) module. This module can help out with problems such as pages with paging being marked as duplicate content by search engines.', prod_check_link_array($title, 'http://drupal.org/project/page_title'));
   }
-  else if (empty($pager)) {
+  elseif (empty($pager)) {
     $error = TRUE;
     $value_nok = t('Not properly configured.');
     $msg_nok = t('You have not !link You should really do this if you want proper Google Indexing.', prod_check_link_array('set a pager suffix', $path));

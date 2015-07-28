@@ -135,7 +135,7 @@ function drush_prod_monitor_statusdetail() {
   if (empty($args)) {
     _drush_prod_monitor_overview();
   }
-  else if (is_numeric($args[0])) {
+  elseif (is_numeric($args[0])) {
     _drush_prod_monitor_detail($args[0]);
   }
 }
@@ -158,7 +158,7 @@ function _drush_prod_monitor_overview() {
     dt('Last update'),
     dt('Status'),
   ));
-  
+
   // TODO: check why the colour coding messes up the tabs for the table
   // Worked around this by placing the status column last
   foreach ($sites as $id => $site_info) {
@@ -314,7 +314,7 @@ function _drush_prod_monitor_updates() {
       return;
     }
   }
-  else if (empty($modules['available'])) {
+  elseif (empty($modules['available'])) {
     drush_set_error('prod_monitor', dt('No update data found for') .' '. $url.'!');
     // No data, ask for refresh.
     _drush_prod_monitor_update_refresh($id, $modules);
