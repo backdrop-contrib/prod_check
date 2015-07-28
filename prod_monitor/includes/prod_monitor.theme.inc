@@ -4,11 +4,13 @@
  * Implements hook_preprocess_prod_monitor_update_report().
  */
 function prod_monitor_preprocess_prod_monitor_update_report(&$vars) {
-  foreach (array_keys($vars['data']) as $module_id) {
+  if (is_array($vars['data'])) {
+    foreach (array_keys($vars['data']) as $module_id) {
 
-    // When ignoring a module, we'll give a reason.
-    if (isset($vars['data'][$module_id]['ignored'])) {
-      $vars['data'][$module_id]['reason'] = t('Being ignored');
+      // When ignoring a module, we'll give a reason.
+      if (isset($vars['data'][$module_id]['ignored'])) {
+        $vars['data'][$module_id]['reason'] = t('Being ignored');
+      }
     }
   }
 }
