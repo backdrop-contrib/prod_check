@@ -461,8 +461,10 @@ function prod_check_settings_form_submit($form, &$form_state) {
     case t('Save configuration'):
       variable_set('prod_check_sitemail', $form_state['values']['prod_check_sitemail']);
       // PHP errors.
-      variable_set('prod_check_dblog_php', $form_state['values']['prod_check_dblog_php']);
-      variable_set('prod_check_dblog_php_threshold', $form_state['values']['prod_check_dblog_php_threshold']);
+      if (module_exists('dblog')) {
+        variable_set('prod_check_dblog_php', $form_state['values']['prod_check_dblog_php']);
+        variable_set('prod_check_dblog_php_threshold', $form_state['values']['prod_check_dblog_php_threshold']);
+      }
       // APC/OPcache.
       variable_set('prod_check_apc_expunge', $form_state['values']['prod_check_apc_expunge']);
       variable_set('prod_check_apcuser', $form_state['values']['prod_check_apcuser']);
