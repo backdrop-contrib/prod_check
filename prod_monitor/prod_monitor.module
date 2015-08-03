@@ -55,6 +55,11 @@ function prod_monitor_help($path, $arg) {
       $output .= t('Each time you edit a site, the settings are fetched from the remote server so that any new checks that might have been added to the <em>Production check</em> module there are always up to date in the monitoring section.') . '<br />';
       $output .= t('<strong>Fetch data immediately</strong> does exactly what it says and fetches all the configured data from the remote site and will direct you to the report page.') . '</p>';
       break;
+    case 'admin/reports/prod-monitor/module-lookup':
+      $output .= '<p><strong>' . t('Module name') . '</strong><br />';
+      $output .= t("Enter the module's machine name to see what sites are using the module.") . '<br />';
+
+      break;
     case 'admin/reports/prod-monitor/site/%':
     case 'admin/reports/prod-monitor/site/%/view':
       $output .= '<p>' . t("This is an overview of all checks performed by the <em>Production check</em> module and their status <strong>on the remote site</strong>. You can click the links inside the report to jump to the module's settings page, or to go to the project page of a module, in case you need to download it for installation.") . '</p>';
@@ -93,6 +98,13 @@ function prod_monitor_menu() {
     'file' => 'includes/prod_monitor.admin.inc',
   );
 
+  // Default primary tab (callback for this is it's parent path).
+  $items['admin/reports/prod-monitor/overview'] = array(
+    'title' => 'Overview',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+   );
+
   $items['admin/reports/prod-monitor/module-lookup'] = array(
     'title' => 'Module lookup',
     'description' => 'Searches monitored applications for module versions.',
@@ -100,8 +112,9 @@ function prod_monitor_menu() {
     'page arguments' => array('prod_monitor_module_lookup_form'),
     'access callback' => 'user_access',
     'access arguments' => array('access production monitor'),
-    'type' => MENU_LOCAL_ACTION,
+    'type' => MENU_LOCAL_TASK,
     'file' => 'includes/prod_monitor.admin.inc',
+    'weight' => 1,
   );
 
   // This hook_menu() thing, still can't fully see the logic in it. However,
