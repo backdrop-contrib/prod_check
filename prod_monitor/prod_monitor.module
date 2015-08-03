@@ -93,6 +93,17 @@ function prod_monitor_menu() {
     'file' => 'includes/prod_monitor.admin.inc',
   );
 
+  $items['admin/reports/prod-monitor/module-lookup'] = array(
+    'title' => 'Module lookup',
+    'description' => 'Searches monitored applications for module versions.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('prod_monitor_module_lookup_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('access production monitor'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'includes/prod_monitor.admin.inc',
+  );
+
   // This hook_menu() thing, still can't fully see the logic in it. However,
   // this here is what I want to achieve. It would be nice to see the /view/ bit
   // in the path dissapear, that would finish it entirely. I'll settle for this

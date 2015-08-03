@@ -710,3 +710,97 @@ function _prod_monitor_update_data_form_submit($form, &$form_state) {
   _prod_monitor_retrieve_data($form_state['values']['site_id'], $form_state['values']['site_info'], TRUE);
 }
 
+/**
+ * Form Callback for admin/reports/prod-monitor/module-lookup
+ *
+ */
+function prod_monitor_module_lookup_form($form, &$form_state) {
+  $form = array();
+
+  if(isset($form_state['projects'])) { // Show results
+
+    $module = $form_state['values']['module'];
+
+    $rows = array();
+    foreach ($form_state['projects'] as $id => $project) {
+
+      $application = _get_application_name($id);
+      $version = $project['info']['version'];
+
+      $rows[] = array(
+        $application,
+        $version,
+        l('View', 'admin/reports/prod-monitor/site/' . $id),
+      );
+    }
+    $form[] = array(
+      '#theme' => 'html_tag',
+      '#tag' => 'h2',
+      '#value' => t('Applications where :module is used', array(':module' => $module)),
+      );
+    $form[] = array(
+      '#theme' => 'table',
+      '#rows' => $rows,
+      '#header' => array(t('Application'), t('Version'), t('View')),
+      );
+
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => 'Perform another lookup',
+      );
+  }
+  else { // Show lookup form
+    $form['module'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Module name',
+      '#required' => TRUE,
+      );
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => 'Fetch Applications',
+      );
+  }
+
+  return $form;
+}
+
+/**
+ * Submission handler for module lookup form
+ */
+function prod_monitor_module_lookup_form_submit(&$form, &$form_state) {
+  if (isset($form_state['values']['module'])) {
+
+    $projects = db_select('prod_monitor_site_modules', 'psm')
+    ->fields('psm', array('id', 'projects'))
+    ->condition('projects', '%"' . $form_state['values']['module'] . '"%', 'LIKE')
+    ->execute()->fetchAllAssoc('id');
+
+    $form_state['rebuild'] = TRUE;
+
+    if ($projects && !empty($projects)) {
+      foreach($projects as $project) {
+
+        $modules = unserialize($project->projects);
+        if (isset($modules[$form_state['values']['module']])) {
+          $form_state['projects'][$project->id] = $modules[$form_state['values']['module']];
+        }
+      }
+    }
+    if(!isset($form_state['projects'])) {
+      drupal_set_message(t('No projects found for :module', array(':module' => $form_state['values']['module'])));
+    }
+  }
+  else {
+    unset($form_state['projects']);
+  }
+}
+
+/**
+ * Helper : get url for prodmon ID
+ */
+function _get_application_name($id) {
+  return db_select('prod_monitor_sites', 'pms')
+  ->fields('pms', array('url'))
+  ->condition('id', $id)
+  ->execute()->fetchField();
+}
