@@ -80,14 +80,14 @@ function drush_prod_monitor_fetch() {
         $result = _prod_monitor_retrieve_data($arg, $site);
         $site['url'] = _prod_monitor_sanitize_url(rtrim($site['url'], '/'));
         if ($result === FALSE) {
-          drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('Unable to fetch data for') . ' ' . $site['url'] . '!');
+          drush_print("\033[1;31m" . dt('Error:') . " \033[0m" . dt('Unable to fetch data for') . ' ' . $site['url'] . '!');
         }
         else {
           drush_print(dt('Sucessfully fetched data for') . ' ' . $site['url'] . '.');
         }
       }
       else {
-        drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('No site found with ID') . ' ' . $arg . '!');
+        drush_print("\033[1;31m" . dt('Error:') . " \033[0m" . dt('No site found with ID') . ' ' . $arg . '!');
       }
     }
   }
@@ -106,14 +106,14 @@ function drush_prod_monitor_flush() {
       }
       $result = _prod_monitor_flush_data($arg);
       if ($result === FALSE) {
-        drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('Unable to flush data!'));
+        drush_print("\033[1;31m" . dt('Error:') . " \033[0m" . dt('Unable to flush data!'));
       }
       else {
         drush_print(dt('Stored data successfully flushed.'));
       }
     }
     else {
-      drush_print("\033[1;31m" . dt('Error:')." \033[0m" . dt('No site found with ID') . ' ' . $arg . '!');
+      drush_print("\033[1;31m" . dt('Error:') . " \033[0m" . dt('No site found with ID') . ' ' . $arg . '!');
     }
   }
 }
@@ -236,7 +236,7 @@ function _drush_prod_monitor_detail($id) {
     $updates = $color . $title . "\033[0m";
 
     // Construct block
-    $block[] = array("\033[1m" . dt('Overall status')."\033[0m");
+    $block[] = array("\033[1m" . dt('Overall status') . "\033[0m");
     $block[] = array(
       dt('Drupal core version'),
       $modules['projects']['drupal']['info']['version'],
@@ -271,12 +271,12 @@ function _drush_prod_monitor_detail($id) {
   foreach ($functions as $set => $data) {
     if (isset($site['data'][$set])) {
       $rows[] = array('');
-      $rows[] = array("\033[1m" . dt($data['title'])."\033[0m");
+      $rows[] = array("\033[1m" . dt($data['title']) . "\033[0m");
       if (!empty($site['data'][$set])) {
         foreach ($site['data'][$set] as $check => $result) {
           $rows[] = array(
             $result['title'],
-            "\033[" . $severity[$result['severity']] . 'm' . strip_tags($result['value'])."\033[0m",
+            "\033[" . $severity[$result['severity']] . 'm' . strip_tags($result['value']) . "\033[0m",
           );
           if ($error < $result['severity']) {
             $error = $result['severity'];
@@ -339,7 +339,7 @@ function drush_prod_monitor_updates() {
         return;
       }
       else {
-        drush_set_error('prod_monitor', dt('No module data found for') . ' '. $url . '!');
+        drush_set_error('prod_monitor', dt('No module data found for') . ' ' . $url . '!');
         return;
       }
     }
