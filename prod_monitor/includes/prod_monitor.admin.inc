@@ -711,7 +711,7 @@ function _prod_monitor_update_data_form_submit($form, &$form_state) {
 }
 
 /**
- * Form Callback for admin/reports/prod-monitor/module-lookup
+ * Callback for module lookup form.
  *
  */
 function prod_monitor_module_lookup_form($form, &$form_state) {
