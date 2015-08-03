@@ -731,7 +731,7 @@ function prod_monitor_module_lookup_form($form, &$form_state) {
       $rows[] = array(
         $application,
         $version,
-        l('View', 'admin/reports/prod-monitor/site/' . $id),
+        l(t('View'), 'admin/reports/prod-monitor/site/' . $id),
       );
     }
     $form['title'] = array(

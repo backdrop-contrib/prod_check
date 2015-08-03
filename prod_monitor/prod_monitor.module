@@ -57,8 +57,7 @@ function prod_monitor_help($path, $arg) {
       break;
     case 'admin/reports/prod-monitor/module-lookup':
       $output .= '<p><strong>' . t('Module name') . '</strong><br />';
-      $output .= t("Enter the module's machine name to see what sites are using the module.") . '<br />';
-
+      $output .= t("Enter (part of) the module's machine name to see what sites are using the module.") . '<br />';
       break;
     case 'admin/reports/prod-monitor/site/%':
     case 'admin/reports/prod-monitor/site/%/view':
