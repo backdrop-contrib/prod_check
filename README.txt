@@ -113,6 +113,20 @@ Production monitor
 6. If you wish to fetch the data immediately, check the appropriate box and save
  the settings. Good to go!
 
+Cron setup
+----------
+To automatically check the site status and/or module updates on cron, you will
+need to install drush and configure the following tasks in the crontab:
+
+# Check ALL sites for updates, once a day starting at 0100H at night.
+0 1 * * *    /path/to/drush -r /path/to/docroot prod-monitor-updates -y --quiet
+# Fetch ALL site data every five minutes (or whatever you please obviously).
+0/5 * * * *    /path/to/drush -r /path/to/docroot  prod-monitor-fetch -y --quiet
+
+Obviously, the time and frequency of these cron jobs is at your discretion.
+Do note that, depending on the number of sites you have configured, the crons
+may be running for quite some time, especially the module update checking job!
+
 Upgrading
 ---------
 When upgrading Production monitor to a newer version, always run update.php to
