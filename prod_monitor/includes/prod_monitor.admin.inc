@@ -4,7 +4,14 @@
  * Build status page.
  */
 function prod_monitor_status($id) {
-  $site = _prod_monitor_get_site($id, TRUE);
+  $site = _prod_monitor_get_site($id, 'all');
+
+  if (!$site) {
+    // See https://api.drupal.org/api/drupal/includes!common.inc/function/drupal_not_found/7
+    return MENU_NOT_FOUND;
+  }
+
+
   drupal_set_title(t('Production monitor status for') . ' ' . _prod_monitor_sanitize_url($site['url']));
 
   $functions = $site['settings']['functions'];
