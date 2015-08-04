@@ -186,7 +186,7 @@ For Production monitor, these commands are available:
   $ drush prod-monitor-fetch [id]
   $ drush prod-monitor-flush [id]
   $ drush prod-monitor-delete [id]
-  $ drush prod-monitor-updates [id] (--check)
+  $ drush prod-monitor-updates [id] (--check, --security-only)
 
 or their aliases:
 
@@ -194,7 +194,7 @@ or their aliases:
   $ drush pmon-fe [id]
   $ drush pmon-fl [id]
   $ drush pmon-rm [id]
-  $ drush pmon-up [id] (--check)
+  $ drush pmon-up [id] (--check, --security-only)
 
 The id parameter is optional for the prod-monitor command. The best usage is to
 first get a list of sites:
