@@ -59,12 +59,6 @@ function prod_monitor_status($id) {
  * Helper function to provide general status block on status overview page
  */
 function _prod_monitor_status_general($prod_mon, $modules) {
-  // TODO: Should we hide the rows for which no data is being retrieved?
-  $cron = t('Unknown');
-  if (isset($prod_mon['prod_check_cron_last'])) {
-    $cron = format_date($prod_mon['prod_check_cron_last'], 'large');
-  }
-
   $updates = _prod_monitor_generate_updates_link($modules['id'], $modules['updates']);
 
   $output = '<h2>' . t('Overall status') . '</h2>' . "\n";
@@ -73,14 +67,44 @@ function _prod_monitor_status_general($prod_mon, $modules) {
       array('data' => t('Drupal core version'), 'header' => TRUE),
       $modules['projects']['drupal']['info']['version'],
     ),
-    array(
+  );
+
+  if (isset($prod_mon['prod_check_cron_last'])) {
+    $rows[] = array(
       array('data' => t('Last cron run'), 'header' => TRUE),
-      $cron,
-    ),
-    array(
-      array('data' => t('Update status'), 'header' => TRUE),
-      $updates,
-    ),
+      format_date($prod_mon['prod_check_cron_last'], 'large'),
+    );
+  }
+
+  // Add dbconnect check info if configured.
+  if (isset($prod_mon['prod_check_dbconnect'])) {
+    $dbconnect = $prod_mon['prod_check_dbconnect'];
+    $class = array();
+    $title = t('DB connection status');
+    if (stripos($dbconnect, '200') === FALSE) {
+      $class = array('error');
+      $title = '<strong>' . $title . '</strong>';
+      $dbconnect = '<strong>' . $dbconnect . '</strong>';
+    }
+
+    $rows[] = array(
+      'data' => array(
+        array(
+          'data' => $title, 'header' => TRUE,
+          'class' => $class,
+        ),
+        array(
+          'data' => $dbconnect,
+          'class' => $class,
+        ),
+      ),
+      'class' => $class,
+    );
+  }
+
+  $rows[] = array(
+    array('data' => t('Update status'), 'header' => TRUE),
+    $updates,
   );
   $output .= theme('table', array('prod_monitor_id' => 'status_general', 'header' => array(), 'rows' => $rows));
 
@@ -120,7 +144,7 @@ function prod_monitor_performance($data) {
   drupal_set_title(t('Performance logs for') . ' ' . _prod_monitor_get_url($data['id']));
 
   // TODO: add 'get stats now' button.
-  //$site = _prod_monitor_get_site($id, TRUE);
+  //$site = _prod_monitor_get_site($id, 'all');
 
   return array(
     'performance_data' => array(
@@ -216,7 +240,7 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
 
     // Add new site situation.
     $sites = _prod_monitor_get_sites();
-    $api_key = $url = '';
+    $dbconnect_path = $api_key = $url = '';
     $options = array();
     $button = t('Get settings');
     if (!empty($sites)) {
@@ -228,6 +252,7 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
     if (!empty($form_state['storage']['get_settings'])) {
       // Second step of add new site situation.
       $api_key = $form_state['values']['api_key'];
+      $dbconnect_path = $form_state['values']['dbconnect_path'];
       $url = $form_state['values']['url'];
       $button = t('Add site');
       $collapsed = FALSE;
@@ -244,6 +269,7 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
     }
     drupal_set_title(t('Production monitor settings for !url', array('!url' => _prod_monitor_sanitize_url($url))));
     $api_key = $site['settings']['api_key'];
+    $dbconnect_path = $site['settings']['dbconnect_path'];
     $options = $site['settings']['checks'];
     if (isset($site['settings']['checks']['perf_data'])) {
       $perf_enabled = $site['settings']['checks']['perf_data'];
@@ -278,6 +304,15 @@ function prod_monitor_overview_form($form, &$form_state, $edit = FALSE) {
     '#size' => 60,
     '#maxlength' => 128,
     '#required' => TRUE,
+  );
+
+  $form['sites']['dbconnect_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('DB connect check script'),
+    '#default_value' => $dbconnect_path,
+    '#description' => t('Enter the relative path, starting from the Drupal root, to the <em>prod_check.dbconnect.php</em> on the remote site. This wil usually be something like sites/all/modules/contrib/prod_check/prod_check.dbconnect.php . <strong>Leave empty if you do not want do enable this check!</strong>'),
+    '#size' => 60,
+    '#maxlength' => 512,
   );
 
   // Only show on second step of add form or when editing.
@@ -518,6 +553,8 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
       $site->settings = serialize(
         array(
           'api_key' => $form_state['values']['api_key'],
+          // Trim spaces and / from left and right side.
+          'dbconnect_path' => trim($form_state['values']['dbconnect_path'], ' /'),
           'functions' => $form_state['storage']['functions'],
           'checks' => $checks,
         )
@@ -528,8 +565,11 @@ function prod_monitor_overview_form_submit($form, &$form_state) {
       if ($result) {
         drupal_set_message(t('Website %url correctly saved.', array('%url' => $site->url)));
         if ($form_state['values']['fetch']) {
-          $site_info = _prod_monitor_get_site($site->id, TRUE);
+          $site_info = _prod_monitor_get_site($site->id, 'all');
+          // First: all checks.
           _prod_monitor_retrieve_data($site->id, $site_info, TRUE);
+          // MUST be second because of the status update!
+          _prod_monitor_db_connect_check($site->id, $site_info);
           $form_state['redirect'] = 'admin/reports/prod-monitor/site/' . $site->id;
         }
       }
@@ -582,11 +622,13 @@ function prod_monitor_fetch_all_data_batcher($fetch_only, $update_only, $msg, &$
 
   // Get site info.
   $id = array_shift($sandbox['sites']);
-  $site_info = _prod_monitor_get_site($id, TRUE);
+  $site_info = _prod_monitor_get_site($id, 'all');
 
   if (!$update_only) {
-    // Fetch data from remote.
+    // First: all checks.
     _prod_monitor_retrieve_data($id, $site_info, $msg);
+    // MUST be second because of the status update!
+    _prod_monitor_db_connect_check($id, $site_info);
   }
 
   if (!$fetch_only) {
@@ -607,8 +649,11 @@ function prod_monitor_fetch_all_data_batcher($fetch_only, $update_only, $msg, &$
  * Callback to fetch site data
  */
 function prod_monitor_fetch_data($id) {
-  $site_info = _prod_monitor_get_site($id, TRUE);
+  $site_info = _prod_monitor_get_site($id, 'all');
+  // First: all checks.
   _prod_monitor_retrieve_data($id, $site_info, TRUE);
+  // MUST be second because of the status update!
+  _prod_monitor_db_connect_check($id, $site_info);
   drupal_goto('admin/reports/prod-monitor/site/' . $id);
 }
 
@@ -714,7 +759,10 @@ function _prod_monitor_update_data_form($form, $form_state, $id, $site_info) {
 }
 
 function _prod_monitor_update_data_form_submit($form, &$form_state) {
+  // First: all checks.
   _prod_monitor_retrieve_data($form_state['values']['site_id'], $form_state['values']['site_info'], TRUE);
+  // MUST be second because of the status update!
+  _prod_monitor_db_connect_check($form_state['values']['site_id'], $form_state['values']['site_info']);
 }
 
 /**

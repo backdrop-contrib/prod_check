@@ -357,8 +357,10 @@ function prod_monitor_cron() {
   foreach ($sites as $id => $site_info) {
     $elapsed = time() - $cron_start;
     if ($elapsed < $time_limit) {
-      //TODO: add module status update check here.
+      // First: all checks.
       _prod_monitor_retrieve_data($id, $site_info);
+      // MUST be second because of the status update!
+      _prod_monitor_db_connect_check($id, $site_info);
       $process++;
     }
     else {
@@ -532,6 +534,42 @@ function _prod_monitor_retrieve_data($id, $site_info, $msg = FALSE) {
 }
 
 /**
+  * Perform separate dbconnect check. We cannot incorporate this at the side of
+  * prod_check as this would make no sense at all when the DB is down.
+ */
+function _prod_monitor_db_connect_check($id, $site_info) {
+  // Execute only if setup properly.
+  if (empty($site_info['settings']['dbconnect_path'])) {
+    return;
+  }
+
+  // Do the check.
+  $dbconnect_path = rtrim($site_info['url'], '/') . '/' . $site_info['settings']['dbconnect_path'];
+  $response = drupal_http_request($dbconnect_path);
+  if ($response->code !== '200' && $response->data !== 'OK') {
+    // Update status to notify the user of the problem!
+    $site_info['status'] = PROD_MONITOR_REQUIREMENT_ERROR;
+    $response->data = 'NOK';
+  }
+
+  // ALWAYS get stored site data as it should have been updated right before
+  // calling this function!
+  $site_data = _prod_monitor_get_site($id, 'data');
+  // Add data to site and save.
+  $site_data['data']['prod_mon']['prod_check_dbconnect'] = $response->code . ' ' . $response->data;
+
+  // Store site data
+  $site = new stdClass();
+  $site->id = $id;
+  if (isset($site_info['status'])) {
+    $site->status = $site_info['status'];
+  }
+  $site->data = serialize($site_data['data']);
+  $site->lastupdate = REQUEST_TIME;
+  $result = drupal_write_record('prod_monitor_sites', $site, array('id'));
+}
+
+/**
  * Helper function to get all sites.
  */
 function _prod_monitor_get_sites($start_id = FALSE) {
@@ -553,7 +591,7 @@ function _prod_monitor_get_sites($start_id = FALSE) {
     if (!empty($row->data)) {
       foreach ($row->data as $set => $checks) {
         foreach ($checks as $check => $results) {
-          $status = ($results['severity'] > $status) ? $results['severity'] : $status;
+          $status = (isset($results['severity']) && $results['severity'] > $status) ? $results['severity'] : $status;
         }
       }
       $data_status = TRUE;
@@ -588,21 +626,33 @@ function _prod_monitor_get_sites($start_id = FALSE) {
  *
  * @param $id
  *  int site id.
- * @param $all
- *  Boolean whether or not to return all fields or just the url and settings.
+ * @param $type
+ *  String the amount of data to be returned.
  */
-function _prod_monitor_get_site($id, $all = FALSE) {
-  if (!$all) {
-    $site = db_query("SELECT url, settings FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAssoc();
-  }
-  else {
-    $site = db_query("SELECT * FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAssoc();
+function _prod_monitor_get_site($id, $type = 'settings') {
+  switch ($type) {
+    case 'settings':
+      $site = db_query("SELECT url, settings FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAssoc();
+      break;
+    case 'all':
+      $site = db_query("SELECT * FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAssoc();
+      break;
+    case 'data':
+      $site = db_query("SELECT data FROM {prod_monitor_sites} WHERE id = :id", array(':id' => $id))->fetchAssoc();
+      break;
   }
 
   if (!empty($site)) {
-    $site['settings'] = unserialize($site['settings']);
-    if ($all) {
-      $site['data'] = unserialize($site['data']);
+    switch ($type) {
+      case 'all':
+        $site['data'] = unserialize($site['data']);
+        // No break!
+      case 'settings':
+        $site['settings'] = unserialize($site['settings']);
+        break;
+      case 'data':
+        $site['data'] = unserialize($site['data']);
+        break;
     }
   }
 

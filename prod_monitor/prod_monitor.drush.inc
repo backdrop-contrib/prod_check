@@ -84,6 +84,7 @@ function drush_prod_monitor_fetch() {
           drush_print("\033[1;31m" . dt('Error:') . " \033[0m" . dt('Unable to fetch data for') . ' ' . $site['url'] . '!');
         }
         else {
+          _prod_monitor_db_connect_check($arg, $site);
           drush_print(dt('Sucessfully fetched data for') . ' ' . $site['url'] . '.');
         }
       }
@@ -200,7 +201,7 @@ function _drush_prod_monitor_overview() {
 }
 
 function _drush_prod_monitor_detail($id) {
-  $site = _prod_monitor_get_site($id, TRUE);
+  $site = _prod_monitor_get_site($id, 'all');
   if (!isset($site['url'])) {
     drush_print("\033[1;31m" . dt('Error:') . " \033[0m" . dt('No site found with ID') . ' ' . $id . '!');
     return;
