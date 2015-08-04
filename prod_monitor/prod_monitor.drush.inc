@@ -23,6 +23,7 @@ function prod_monitor_drush_command() {
     ),
     'options' => array(
       'check' => 'Check for module updates.',
+      'security-only' => 'Only show modules that have security updates available.',
     ),
   );
   $items['prod-monitor-fetch'] = array(
@@ -326,7 +327,7 @@ function drush_prod_monitor_updates() {
       drush_backend_batch_process();
     }
   }
-  // Fetch one or more sites as requested.
+  // Fetch the site as requested.
   else {
     $id = $id['0'];
 
@@ -354,6 +355,8 @@ function drush_prod_monitor_updates() {
       _drush_prod_monitor_update_refresh($id, $modules);
     }
 
+    $security_only = drush_get_option('security-only');
+
     $last = $modules['lastupdate'];
     module_load_include('inc', 'prod_monitor', 'includes/prod_monitor.update');
     $projects = _prod_monitor_calculate_project_data($id, $modules['projects'], $modules['available']);
@@ -366,25 +369,43 @@ function drush_prod_monitor_updates() {
     // Process releases, notifying user of status and building a list of proposed updates
     drush_include_engine('update_info', 'drupal', NULL, DRUSH_BASE_PATH . '/commands/pm/update_info');
     drush_include(DRUSH_BASE_PATH . '/commands/pm', 'updatecode.pm');
-    $updateable = pm_project_filter($projects, $rows);
-
-    // Pipe preparation
-    if (drush_get_context('DRUSH_PIPE')) {
-      $pipe = "";
-      foreach($projects as $project){
-        $pipe .= $project['name']. " ";
-        $pipe .= $project['existing_version']. " ";
-        $pipe .= $project['candidate_version']. " ";
-        $pipe .= str_replace(' ', '-', pm_update_filter($project)). "\n";
+    foreach ($projects as $project) {
+      // Only show security updates if the user requested it.
+      if ($security_only && $project['status'] !== UPDATE_NOT_SECURE) {
+        continue;
       }
-      drush_print_pipe($pipe);
-      // Automatically curtail update process if in pipe mode
-      $updateable = FALSE;
+      // Add color to the status.
+      $color = "\033[0m";
+      switch ($project['status']) {
+        case UPDATE_CURRENT:
+          $color = "\033[1;32m";
+          break;
+        case UPDATE_NOT_CURRENT:
+          $color = "\033[1;33m";
+          break;
+        case UPDATE_NOT_SECURE:
+          $color = "\033[1;31m";
+          break;
+      }
+      // Translate status to readable name and fill 'candidate_version'.
+      $status = pm_update_filter($project);
+      // Generate row.
+      $rows[] = array(
+        $project['name'],
+        $project['existing_version'],
+        $project['candidate_version'],
+        $color . $status . "\033[0m",
+      );
     }
 
     drush_print("\033[1m" . dt('Module update status for') . ' ' . $url . "\033[0m", 1);
     drush_print(dt('Update information last refreshed:') . ' ' . ($last  ? format_date($last) : dt('Never')) . "\n", 1);
-    drush_print_table($rows, TRUE);
+    if (count($rows) > 1) {
+      drush_print_table($rows, TRUE);
+    }
+    else {
+      drush_print("\033[1m" . dt('No updates to show!') . "\033[0m", 1);
+    }
   }
 }
 
