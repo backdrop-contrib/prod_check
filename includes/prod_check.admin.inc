@@ -1034,16 +1034,18 @@ function _prod_check_dbstatus_pgsql($db_name, $details) {
  * Integration of the APC status page.
  */
 function prod_check_apc_opc() {
+  // FIRST check OPCache. APCu in the newest PHP versions uses the same
+  // functions as APC so instead of adding PHP version checks, we do it this
+  // way.
+  if (function_exists('opcache_get_status')) {
+    include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.opcache.inc');
+    exit;
+  }
   // APC.
-  if (function_exists('apc_cache_info')) {
+  elseif (function_exists('apc_cache_info')) {
     define('ADMIN_USERNAME', variable_get('prod_check_apcuser', 'apc'));
     define('ADMIN_PASSWORD', variable_get('prod_check_apcpass', 'password'));
     include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.apc.inc');
-    exit;
-  }
-  // OPcache.
-  elseif (function_exists('opcache_get_status')) {
-    include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.opcache.inc');
     exit;
   }
   else {

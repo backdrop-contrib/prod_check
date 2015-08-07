@@ -829,9 +829,9 @@ function _prod_check_apc_opc($caller = 'internal') {
     $val_nok = t('Disabled');
     $error = TRUE;
   }
-  elseif (function_exists('apc_cache_info')) {
-    $cache = @apc_cache_info('opcode');
-  }
+  // FIRST check OPCache. APCu in the newest PHP versions uses the same
+  // functions as APC so instead of adding PHP version checks, we do it this
+  // way.
   elseif (function_exists('opcache_get_status')) {
     $opc_cache = @opcache_get_status();
     if ($opc_cache && $opc_cache['opcache_enabled']) {
@@ -845,6 +845,9 @@ function _prod_check_apc_opc($caller = 'internal') {
       $val_nok = t('Disabled');
       $error = TRUE;
     }
+  }
+  elseif (function_exists('apc_cache_info')) {
+    $cache = @apc_cache_info('opcode');
   }
 
   if (!empty($cache)) {
