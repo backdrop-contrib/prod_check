@@ -121,7 +121,7 @@ need to install drush and configure the following tasks in the crontab:
 # Check ALL sites for updates, once a day starting at 0100H at night.
 0 1 * * *    /path/to/drush -r /path/to/docroot prod-monitor-updates -y --quiet
 # Fetch ALL site data every five minutes (or whatever you please obviously).
-0/5 * * * *    /path/to/drush -r /path/to/docroot  prod-monitor-fetch -y --quiet
+*/5 * * * *    /path/to/drush -r /path/to/docroot  prod-monitor-fetch -y --quiet
 
 Obviously, the time and frequency of these cron jobs is at your discretion.
 Do note that, depending on the number of sites you have configured, the crons
