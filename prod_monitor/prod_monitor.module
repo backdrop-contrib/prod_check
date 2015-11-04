@@ -390,7 +390,7 @@ function _prod_monitor_retrieve_functions($url, $api_key, $msg = TRUE) {
   $functions = xmlrpc($url, array('prod_check.get_settings' => array($api_key)));
   if (!$functions) {
     drupal_set_message(
-      t('Failed to retrieve settings form from !link, please verify the given URL and try again!',
+      t('Failed to retrieve settings form !link, please verify the given URL and try again!',
         array('!link' => l('remote site', $url, array('attributes' => array('title' => t('remote site')))))
       ),
       'error'
