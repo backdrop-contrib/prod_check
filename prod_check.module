@@ -639,6 +639,7 @@ function _prod_check_functions() {
       '_prod_check_page_title' => 'Page titles',
       '_prod_check_pathauto' => 'Path auto',
       '_prod_check_redirect' => 'Redirect',
+      '_prod_check_www' => 'WWW redirect',
       '_prod_check_xmlsitemap' => 'XML sitemap',
     ),
   );
@@ -1907,6 +1908,63 @@ function _prod_check_redirect($caller = 'internal') {
   );
 
   return prod_check_execute_check($check, $caller);
+}
+
+// WWW redirect
+function _prod_check_www($caller = 'internal') {
+  global $base_url;
+
+  $check = array();
+  $error = FALSE;
+  $redirect_code = 0;
+
+  // We use base_path() in case Drupal is installed in a subdir.
+  $url = $original = $base_url . base_path();
+  $www = '://www.';
+  // If the current domain starts with www. ...
+  if (stripos($url, $www) !== FALSE) {
+    // ...strip it so we check the www-less version
+    $url = str_replace($www, '://', $url);
+  }
+  else {
+    // ..else add the www before the domain.
+    $url = str_replace('://', $www, $url);
+  }
+
+  // Perform an HTTP request.
+  $result = drupal_http_request($url);
+  // The result code will be 0 when the call could not be made or will be
+  // negative when there is an internal error. Only if we succeed in making the
+  // call, we will make the check count, otherwise this check will be 'skipped'.
+  if ($result->code > 0) {
+    if (isset($result->redirect_code)) {
+      $redirect_code = $result->redirect_code;
+    }
+    else {
+      $error = TRUE;
+    }
+
+    $check['prod_check_www'] = array(
+      '#title' => t('WWW redirect'),
+      '#state' => !$error,
+      '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
+      '#value_ok'  => t('WWW redirect setup correctly!'),
+      '#value_nok'  => t('No WWW redirect found!'),
+      '#description_ok'  => t('WWW redirect properly setup: %url redirects to %original with HTTP status code %code.', array(
+        '%url' => $url,
+        '%original' => $original,
+        '%code' => $redirect_code,
+      )),
+      '#description_nok' => t("You should make sure you setup an HTTP redirect with status code 301 from %url to %original (or vice versa) to prevent duplicate content punishment by search engines such as Google.<br />You can do this easily by uncommenting the right block in Drupal's .htaccess file.", array(
+        '%url' => $url,
+        '%original' => $original,
+      )),
+      '#nagios_key' => 'WWWR',
+      '#nagios_type' => 'state',
+    );
+
+    return prod_check_execute_check($check, $caller);
+  }
 }
 
 // XML sitemap
