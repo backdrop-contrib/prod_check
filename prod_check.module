@@ -2064,7 +2064,7 @@ function _prod_check_module_list($caller = 'internal') {
   return prod_check_execute_check($check, $caller, 'prod_mon');
 }
 
-// Module list
+// Last cron run
 function _prod_check_cron_last($caller = 'internal') {
   $check = array();
   $check['prod_check_cron_last'] = variable_get('cron_last', 0);
