@@ -1056,6 +1056,11 @@ function _prod_check_page_compression($caller = 'internal') {
     if (module_exists('varnish') || module_exists('steroids')) {
       $status = TRUE;
     }
+    // Check if server is already handling compression, in which case the
+    // setting also should be off.
+    if (function_exists('ob_gzhandler') && ini_get('zlib.output_compression')) {
+      $status = TRUE;
+    }
   }
 
   $check['prod_check_page_compression'] = array(
