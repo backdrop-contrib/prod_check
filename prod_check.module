@@ -321,9 +321,11 @@ function prod_check_get_data($ping_key, $checks) {
     foreach ($checks as $set => $calls) {
       $data[$set] = array();
       foreach ($calls as $key => $function) {
-        $check = call_user_func($function, 'xmlrpc');
-        if (is_array($check) && !empty($check)) {
-          $data[$set] = array_merge($data[$set], $check);
+        if (function_exists($function)) {
+          $check = call_user_func($function, 'xmlrpc');
+          if (is_array($check) && !empty($check)) {
+            $data[$set] = array_merge($data[$set], $check);
+          }
         }
       }
     }
