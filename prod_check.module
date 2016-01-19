@@ -375,9 +375,11 @@ function prod_check_nagios() {
     foreach ($checks as $set => $calls) {
       // TODO: add check on $set here. Single out 'perf_data' and treat differently.
       foreach ($calls as $key => $function) {
-        $check = call_user_func($function, 'nagios');
-        if (is_array($check) && !empty($check)) {
-          $status = array_merge($status, $check);
+        if (function_exists($function)) {
+          $check = call_user_func($function, 'nagios');
+          if (is_array($check) && !empty($check)) {
+            $status = array_merge($status, $check);
+          }
         }
       }
     }
