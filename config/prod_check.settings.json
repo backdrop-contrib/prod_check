@@ -1,0 +1,18 @@
+{
+    "_config_name": "prod_check.settings",
+    "apcuser": "apc",
+    "apcpass": "password",
+    "apc_expunge": 0,
+    "module_list_day": 0,
+    "module_list_time": "03:00",
+    "exclude_disabled_modules": 0,
+    "enable_nagios": 0,
+    "nagios_unique": "default",
+    "nagios_checks": [],
+    "nagios_verbose": 0,
+    "enable_xmlrpc": 0,
+    "xmlrpc_key": "",
+    "sitemail": "",
+    "dblog_php": 4,
+    "dblog_php_threshold": 1
+}

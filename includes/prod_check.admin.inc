@@ -35,6 +35,7 @@ function prod_check_status() {
  * Build settings form.
  */
 function prod_check_settings_form($form, &$form_state) {
+  $config = config('prod_check.settings');
   drupal_set_title(t('Production check settings'));
   $form = array();
 
@@ -71,7 +72,7 @@ function prod_check_settings_form($form, &$form_state) {
   $form['prod_check_general']['prod_check_sitemail'] = array(
     '#type' => 'textfield',
     '#title' => t('Mail check'),
-    '#default_value' => variable_get('prod_check_sitemail', ''),
+    '#default_value' => $config->get('sitemail'),
     '#size' => 60,
     '#description' => t('Enter (part of) the e-mail address you always <strong>use when developing</strong> a website. This is used in a regular expression in the "Site e-mail", Contact and Webform modules check.'),
     '#required' => FALSE,
@@ -80,7 +81,7 @@ function prod_check_settings_form($form, &$form_state) {
     $form['prod_check_general']['prod_check_dblog_php'] = array(
       '#type' => 'select',
       '#title' => t('Minimal watchdog severity for PHP errors'),
-      '#default_value' => variable_get('prod_check_dblog_php', WATCHDOG_WARNING),
+      '#default_value' => $config->get('dblog_php'),
       '#options' => watchdog_severity_levels(),
       '#description' => t('Select the severity level from which to start reporting PHP errors being logged to the watchdog table.'),
       '#required' => TRUE,
@@ -89,7 +90,7 @@ function prod_check_settings_form($form, &$form_state) {
       '#type' => 'textfield',
       '#title' => t('Threshold for PHP errors'),
       '#size' => 2,
-      '#default_value' => variable_get('prod_check_dblog_php_threshold', 1),
+      '#default_value' => $config->get('dblog_php_threshold'),
       '#description' => t('Enter the number of times a PHP error needs to occur before reporting a problem. E.g. entering 3 here will allow 2 occurences of the exact same PHP error without an error being reported.'),
       '#required' => TRUE,
     );
@@ -107,7 +108,7 @@ function prod_check_settings_form($form, &$form_state) {
   $form['prod_check_apc']['prod_check_apc_expunge'] = array(
     '#type' => 'textfield',
     '#title' => t('APC/OPcache cache full count threshold'),
-    '#default_value' => variable_get('prod_check_apc_expunge', 0),
+    '#default_value' => $config->get('apc_expunge'),
     '#size' => 2,
     '#description' => t('Issue a critical error when the cache full count is greater than the number entered here.'),
     '#required' => FALSE,
@@ -117,7 +118,7 @@ function prod_check_settings_form($form, &$form_state) {
   $form['prod_check_apc']['prod_check_apcuser'] = array(
     '#type' => 'textfield',
     '#title' => t('APC advanced features username'),
-    '#default_value' => variable_get('prod_check_apcuser', 'apc'),
+    '#default_value' => $config->get('apcuser'),
     '#size' => 60,
     '#description' => t('The username for logging in to the APC settings page.'),
     '#required' => FALSE,
@@ -142,7 +143,7 @@ function prod_check_settings_form($form, &$form_state) {
   $form['prod_check_disabled']['prod_check_exclude_disabled_modules'] = array(
     '#type' => 'checkbox',
     '#title' => t("Don't check for updates for disabled modules"),
-    '#default_value' => variable_get('prod_check_exclude_disabled_modules', 0),
+    '#default_value' => $config->get('exclude_disabled_modules'),
     '#description' => t('When checked, only enabled modules will be reported. Note that this can cause some modules that are used but not enabled (f.e. APC, memcache, domain,...) to get skipped. See the documentation on how to add disabled modules on a whitelist.'),
     '#required' => FALSE,
   );
@@ -161,7 +162,7 @@ function prod_check_settings_form($form, &$form_state) {
   $form['prod_check_xmlrpc']['prod_check_enable_xmlrpc'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable XMLRPC API'),
-    '#default_value' => variable_get('prod_check_enable_xmlrpc', 0),
+    '#default_value' => $config->get('enable_xmlrpc'),
     '#description' => t('Tick this box if you would like to the module to open up the XMLRPC api so that it can be queried externally to supply information to a base site for monitoring purposes.'),
     '#ajax' => array(
       'callback' => 'prod_check_enable_xmlrpc',
@@ -178,13 +179,13 @@ function prod_check_settings_form($form, &$form_state) {
   );
   // Only show when the checkbox above is selected.
   if (!isset($form_state['values']['prod_check_enable_xmlrpc'])) {
-    $form_state['values']['prod_check_enable_xmlrpc'] = variable_get('prod_check_enable_xmlrpc', 0);
+    $form_state['values']['prod_check_enable_xmlrpc'] = $config->get('enable_xmlrpc');
   }
   if ($form_state['values']['prod_check_enable_xmlrpc']) {
     $form['prod_check_xmlrpc']['xmlrpc']['prod_check_xmlrpc_key'] = array(
       '#type' => 'textfield',
       '#title' => t('API key'),
-      '#default_value' => variable_get('prod_check_xmlrpc_key', prod_check_generate_key()),
+      '#default_value' => !empty($config->get('xmlrpc_key')) ? $config->get('xmlrpc_key') : prod_check_generate_key()),
       '#maxlength' => 128,
       '#size' => 60,
       '#description' => t('Enter a key here to ensure secure transfer of data over the API. Use a mixture of alphanumeric and special characters for increased security.'),
@@ -194,21 +195,21 @@ function prod_check_settings_form($form, &$form_state) {
       '#type' => 'select',
       '#title' => t('Report module list every'),
       '#options' => array(t('Sunday'), t('Monday'), t('Tuesday'), t('Wednesday'), t('Thursday'), t('Friday'), t('Saturday')),
-      '#default_value' => variable_get('prod_check_module_list_day', 0),
+      '#default_value' => $config->get('module_list_day'),
       '#description' => t('Defines which day the module list will be fetchable by Production monitor for an update status check.'),
       '#required' => FALSE,
     );
     $form['prod_check_xmlrpc']['xmlrpc']['prod_check_module_list_time'] = array(
       '#type' => 'textfield',
       '#title' => t('at this time'),
-      '#default_value' => variable_get('prod_check_module_list_time', '03:00'),
+      '#default_value' => $config->get('module_list_time'),
       '#maxlength' => 5,
       '#size' => 5,
       '#description' => t('Defines what time (HH:MM) the module list will be fetchable by Production monitor for an update status check.'),
       '#required' => FALSE,
     );
     // See http://drupal.org/node/1058896#comment-5594076 .
-    if (variable_get('prod_check_module_list_lastrun', 0) != -1) {
+    if (state_get('prod_check_module_list_lastrun', 0) != -1) {
       $form['prod_check_xmlrpc']['xmlrpc']['reset'] = array(
         '#prefix' => '<div class="clear">',
         '#type' => 'submit',
@@ -235,7 +236,7 @@ function prod_check_settings_form($form, &$form_state) {
       '#type' => 'checkbox',
       '#title' =>   t('Enable Nagios integration'),
       '#description' => t('Tick this box if you want to enable integration with Nagios. The !link module is required for this to function.', array('!link' => l(t('Nagios'), 'http://drupal.org/project/nagios', array('attributes' => array('title' => t('Nagios')))))),
-      '#default_value' => variable_get('prod_check_enable_nagios', 0),
+      '#default_value' => $config->get('enable_nagios'),
       '#ajax' => array(
         'callback' => 'prod_check_enable_nagios',
         'wrapper' => 'prod-check-nagios',
@@ -252,13 +253,13 @@ function prod_check_settings_form($form, &$form_state) {
     );
     // Only show when the checkbox above is selected.
     if (!isset($form_state['values']['prod_check_enable_nagios'])) {
-      $form_state['values']['prod_check_enable_nagios'] = variable_get('prod_check_enable_nagios', 0);
+      $form_state['values']['prod_check_enable_nagios'] = $config->get('enable_nagios');
     }
     // TODO: find a way to detect when this is rendered so we can adjust the
     // prod-check.js and apply equalheights/width
     if ($form_state['values']['prod_check_enable_nagios']) {
       $form['prod_check_nagios']['nagios']['settings'] = _prod_check_functions_as_form();
-      $options = variable_get('prod_check_nagios_checks', array());
+      $options = $config->get('nagios_checks');
       if (!empty($options)) {
         // Just to increase readability of the source here.
         $monitor_settings = &$form['prod_check_nagios']['nagios']['settings']['prod_check_settings']['monitor_settings'];
@@ -283,7 +284,7 @@ function prod_check_settings_form($form, &$form_state) {
           '404' => t('throw a 404 error'),
           'home' => t('redirect to homepege'),
         ),
-        '#default_value' => variable_get('prod_check_nagios_unique', 'default'),
+        '#default_value' => $config->get('nagios_unique'),
         '#required' => FALSE,
       );
       $form['prod_check_nagios']['nagios']['settings']['prod_check_nagios_takeover'] = array(
@@ -300,7 +301,7 @@ function prod_check_settings_form($form, &$form_state) {
         '#type' => 'checkbox',
         '#title' => t('Show verbose status info'),
         '#description' => t('Tick this box if you want to see detailed information about every check. Useful for debugging or first setup, but <strong>not recommended for production use!</strong>'),
-        '#default_value' => variable_get('prod_check_nagios_verbose', 0),
+        '#default_value' => $config->get('nagios_verbose'),
         '#required' => FALSE,
       );
     }
@@ -454,37 +455,39 @@ function prod_check_settings_form_validate($form, &$form_state) {
  * guess.
  */
 function prod_check_settings_form_submit($form, &$form_state) {
+  $config = config('prod_check.settings');
+
   switch ($form_state['values']['op']) {
     case t('Force immediate module list reporting'):
-      variable_set('prod_check_module_list_lastrun', -1);
+      state_set('prod_check_module_list_lastrun', -1);
       break;
     case t('Save configuration'):
-      variable_set('prod_check_sitemail', $form_state['values']['prod_check_sitemail']);
+      $config->set('sitemail', $form_state['values']['prod_check_sitemail']);
       // PHP errors.
       if (module_exists('dblog')) {
-        variable_set('prod_check_dblog_php', $form_state['values']['prod_check_dblog_php']);
-        variable_set('prod_check_dblog_php_threshold', $form_state['values']['prod_check_dblog_php_threshold']);
+        $config->set('dblog_php', $form_state['values']['prod_check_dblog_php']);
+        $config->set('dblog_php_threshold', $form_state['values']['prod_check_dblog_php_threshold']);
       }
       // APC/OPcache.
-      variable_set('prod_check_apc_expunge', $form_state['values']['prod_check_apc_expunge']);
-      variable_set('prod_check_apcuser', $form_state['values']['prod_check_apcuser']);
+      $config->set('apc_expunge', $form_state['values']['prod_check_apc_expunge']);
+      $config->set('apcuser', $form_state['values']['prod_check_apcuser']);
       if (!empty($form_state['values']['prod_check_apcpass'])) {
-        variable_set('prod_check_apcpass', $form_state['values']['prod_check_apcpass']);
+        $config->set('apcpass', $form_state['values']['prod_check_apcpass']);
       }
       else {
-        variable_set('prod_check_apcpass', 'password');
+        $config->set('apcpass', 'password');
       }
-      variable_set('prod_check_exclude_disabled_modules', $form_state['values']['prod_check_exclude_disabled_modules']);
+      $config->set('exclude_disabled_modules', $form_state['values']['prod_check_exclude_disabled_modules']);
       if ($form_state['values']['prod_check_enable_xmlrpc']) {
         // Enable.
-        variable_set('prod_check_enable_xmlrpc', $form_state['values']['prod_check_enable_xmlrpc']);
-        variable_set('prod_check_xmlrpc_key', $form_state['values']['prod_check_xmlrpc_key']);
-        variable_set('prod_check_module_list_day', $form_state['values']['prod_check_module_list_day']);
-        variable_set('prod_check_module_list_time', $form_state['values']['prod_check_module_list_time']);
+        $config->set('enable_xmlrpc', $form_state['values']['prod_check_enable_xmlrpc']);
+        $config->set('xmlrpc_key', $form_state['values']['prod_check_xmlrpc_key']);
+        $config->set('module_list_day', $form_state['values']['prod_check_module_list_day']);
+        $config->set('module_list_time', $form_state['values']['prod_check_module_list_time']);
       }
       else {
         // Disable.
-        variable_set('prod_check_enable_xmlrpc', 0);
+        $config->set('enable_xmlrpc', 0);
       }
       // This is why we didn't use a system_settings_form().
       if (isset($form_state['values']['prod_check_enable_nagios']) && $form_state['values']['prod_check_enable_nagios']) {
@@ -497,25 +500,21 @@ function prod_check_settings_form_submit($form, &$form_state) {
           }
         }
         // Enable.
-        variable_set('prod_check_enable_nagios', $form_state['values']['prod_check_enable_nagios']);
-        variable_set('prod_check_nagios_checks', $checks);
-        variable_set('prod_check_nagios_unique', $form_state['values']['prod_check_nagios_unique']);
-        variable_set('prod_check_nagios_verbose', $form_state['values']['prod_check_nagios_verbose']);
+        $config->set('enable_nagios', $form_state['values']['prod_check_enable_nagios']);
+        $config->set('nagios_checks', $checks);
+        $config->set('nagios_unique', $form_state['values']['prod_check_nagios_unique']);
+        $config->set('nagios_verbose', $form_state['values']['prod_check_nagios_verbose']);
       }
       else {
         // Disable.
-        variable_set('prod_check_enable_nagios', 0);
+        $config->set('enable_nagios', 0);
       }
+      $config->save();
       drupal_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
-      // This beats multiple variable_del() calls.
-      // Don't delete prod_check_module_list_lastrun!
-      // DELETE FROM {variable} WHERE name LIKE "prod_check\_%" AND name <> "prod_check_module_list_lastrun"'
-      db_delete('variable')
-        ->condition('name', 'prod_check\_%', 'LIKE')
-        ->condition('name', 'prod_check_module_list_lastrun', '<>')
-        ->execute();
+      $config->delete();
+      config_install_default_config('prod_check.settings');
       cache_clear_all('variables', 'cache_bootstrap');
       drupal_set_message(t('The configuration options have been reset to their default values.'));
       break;
@@ -539,14 +538,14 @@ function prod_check_prod_mode_form() {
   $form['site_mail'] = array(
     '#type' => 'textfield',
     '#title' => t('Site e-mail address'),
-    '#description' => t('This field is optional and will be used to setup the default e-mail address of this site. <strong>Currently set to %mail.</strong>', array('%mail' => variable_get('site_mail', '[not set]'))),
+    '#description' => t('This field is optional and will be used to setup the default e-mail address of this site. <strong>Currently set to %mail.</strong>', array('%mail' => config_get('system.core', 'site_mail'))),
   );
 
   if (module_exists('webform')) {
     $form['webform_default_from_address'] = array(
       '#type' => 'textfield',
       '#title' => t('Webform default from e-mail address'),
-      '#description' => t('This field is optional and will be used to setup the default from e-mail address for <em>Webform</em>. <strong>Currently set to %mail.</strong>', array('%mail' => variable_get('webform_default_from_address', '[not set]'))),
+      '#description' => t('This field is optional and will be used to setup the default from e-mail address for <em>Webform</em>. <strong>Currently set to %mail.</strong>', array('%mail' => config_get('webform.settings', 'default_from_address'))),
     );
   }
 
@@ -554,15 +553,9 @@ function prod_check_prod_mode_form() {
     $form['googleanalytics_account'] = array(
       '#type' => 'textfield',
       '#title' => t('Google Analytics Web Property ID'),
-      '#description' => t('This field is optional and will be used to setup the <em>Google Analytics</em> account. <strong>Currently set to %account.</strong>', array('%account' => variable_get('googleanalytics_account', '[not set]'))),
+      '#description' => t('This field is optional and will be used to setup the <em>Google Analytics</em> account. <strong>Currently set to %account.</strong>', array('%account' => config_get('googleanalytics.settings', 'account'))),
     );
   }
-
-  $form['block_cache'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable <em>Block cache</em>'),
-    '#description' => t("If ticked, this will enable block caching. <strong>This can cause unwanted results if custom blocks don't handle caching well!</strong>"),
-  );
 
   if (module_exists('dblog')) {
     $form['dblog'] = array(
@@ -668,14 +661,8 @@ function prod_check_prod_mode_settings($options) {
     $variables['googleanalytics_account'] = $options['googleanalytics_account'];
   }
 
-  // Cache blocks.
-  if (isset($options['block_cache']) && !empty($options['block_cache'])) {
-    $variables['block_cache'] = 1;
-  }
-
-  // Set variables. Wanted to do this in one query, but that was impossible due
-  // to the fact that it is possible a variable does not exist in the database
-  // yet and still have a value. Damn that default value in variable_get()!
+  // Set variables.
+  // @TODO Find way to use with config->set
   foreach ($variables as $variable => $value) {
     variable_set($variable, $value);
   }
@@ -1043,8 +1030,9 @@ function prod_check_apc_opc() {
   }
   // APC.
   elseif (function_exists('apc_cache_info')) {
-    define('ADMIN_USERNAME', variable_get('prod_check_apcuser', 'apc'));
-    define('ADMIN_PASSWORD', variable_get('prod_check_apcpass', 'password'));
+    $config = config('prod_check.settings');
+    define('ADMIN_USERNAME', $config->get('apcuser'));
+    define('ADMIN_PASSWORD', $config->get('apcpass'));
     include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.apc.inc');
     exit;
   }
@@ -1058,7 +1046,7 @@ function prod_check_apc_opc() {
  */
 function prod_check_memcache() {
   // Memcache module defaults to 127.0.0.1:11211
-  $memcache_servers = variable_get('memcache_servers', array('127.0.0.1:11211' => 'default'));
+  $memcache_servers = config_get('memcache.settings', 'servers');
 
   global $MEMCACHE_SERVERS;
   $MEMCACHE_SERVERS = array_keys($memcache_servers);

@@ -341,14 +341,14 @@ function template_preprocess_prod_monitor_performance(&$vars) {
  * Implementation of hook_cron()
  */
 function prod_monitor_cron() {
-  if (variable_get('prod_monitor_cron_running', FALSE)) {
+  if (state_get('prod_monitor_cron_running', FALSE)) {
     watchdog('prod_monitor', 'Last cron run was not properly terminated!', array(), WATCHDOG_ERROR);
   }
 
-  $sites = _prod_monitor_get_sites(variable_get('prod_monitor_cron_start_at', 0));
+  $sites = _prod_monitor_get_sites(state_get('prod_monitor_cron_start_at', 0));
 
   // Indicate we're running.
-  variable_set('prod_monitor_cron_running', TRUE);
+  state_set('prod_monitor_cron_running', TRUE);
   $cron_start = REQUEST_TIME;
   // 180 seconds run max!
   $time_limit = 180;
@@ -365,20 +365,20 @@ function prod_monitor_cron() {
     }
     else {
       // Time's up! Start with this site next time.
-      variable_set('prod_monitor_cron_start_at', $id);
+      state_set('prod_monitor_cron_start_at', $id);
       break;
     }
   }
 
   // If all was processed, make sure we start from the top next time
   if ($process >= count($sites)) {
-    variable_set('prod_monitor_cron_start_at', 0);
+    state_set('prod_monitor_cron_start_at', 0);
   }
 
   watchdog('prod_monitor', '!count sites updated successfully in !time seconds.', array('!count' => $process, '!time' => $elapsed), WATCHDOG_NOTICE);
 
   // Indicate we've stopped.
-  variable_del('prod_monitor_cron_running');
+  state_del('prod_monitor_cron_running');
 }
 
 /**

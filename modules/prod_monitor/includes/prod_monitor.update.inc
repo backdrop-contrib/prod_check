@@ -27,7 +27,7 @@ function _prod_monitor_update_refresh($id, $projects, $site_key) {
   $available = array();
 
   // As replacement for DRUPAL_CORE_COMPATIBILITY since prod_check and
-  // prod_monitor should be site independant.
+  // prod_monitor should be site independent.
   $core = explode('.', $projects['drupal']['info']['version']);
   $core = $core[0] . '.x';
 
