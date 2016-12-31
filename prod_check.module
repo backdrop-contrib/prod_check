@@ -599,8 +599,7 @@ function _prod_check_functions() {
     'functions' => array(
       '_prod_check_page_cache' => 'Page caching',
       '_prod_check_page_compression' => 'Page compression',
-      '_prod_check_boost' => 'Boost settings',
-      '_prod_check_block_cache' => 'Block cache',
+//      '_prod_check_boost' => 'Boost settings',
       '_prod_check_preprocess_css' => 'Optimize CSS files',
       '_prod_check_preprocess_js' => 'Optimize JavaScript files',
     ),
@@ -611,7 +610,6 @@ function _prod_check_functions() {
     'title' => 'Security',
     'description' => 'Various security related checks.',
     'functions' => array(
-      '_prod_check_node_available' => 'Is /node available?',
       /*'_prod_check_user_pass' => 'User passwords',*/
       '_prod_check_anonymous_rights' => 'Anonymous user rights',
       '_prod_check_admin_username' => 'Is user 1 named "admin"?'
@@ -625,10 +623,10 @@ function _prod_check_functions() {
     'functions' => array(
       '_prod_check_contact' => 'Contact',
       '_prod_check_devel' => 'Devel',
-      '_prod_check_search_config' => 'Search config',
+//      '_prod_check_search_config' => 'Search config',
       '_prod_check_update_status' => 'Update status',
       '_prod_check_webform' =>  'Webform',
-      '_prod_check_mimemail' => 'Mimemail',
+//      '_prod_check_mimemail' => 'Mimemail',
       '_prod_check_missing_module_files' => 'Active modules',
     ),
   );
@@ -640,8 +638,8 @@ function _prod_check_functions() {
     'functions' => array(
       '_prod_check_googleanalytics' => 'Google Analytics',
       '_prod_check_metatag' => 'Metatag',
-      '_prod_check_page_title' => 'Page titles',
-      '_prod_check_pathauto' => 'Path auto',
+//      '_prod_check_page_title' => 'Page titles',
+      '_prod_check_pathauto' => 'Path',
       '_prod_check_redirect' => 'Redirect',
       '_prod_check_www' => 'WWW redirect',
       '_prod_check_xmlsitemap' => 'XML sitemap',
@@ -684,7 +682,7 @@ function _prod_check_error_reporting($caller = 'internal') {
   $setting[ERROR_REPORTING_DISPLAY_SOME] = t('Errors and warnings');
   $setting[ERROR_REPORTING_DISPLAY_ALL] = t('All messages');
 
-  $current = variable_get('error_level', ERROR_REPORTING_DISPLAY_ALL);
+  $current = config_get('system.core', 'error_level');
   $check['prod_check_error_reporting'] = array(
     '#title' => t($title),
     '#state' => $current == ERROR_REPORTING_HIDE,
@@ -719,7 +717,7 @@ function _prod_check_user_register($caller = 'internal') {
   $setting[USER_REGISTER_VISITORS] = t('Visitors');
   $setting[USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL] = t('Visitors, but administrator approval is required');
 
-  $current = variable_get('user_register', 1);
+  $current = config_get('system.core', 'user_register');
   $check['prod_check_user_register'] = array(
     '#title' => t($title),
     '#state' => $current != USER_REGISTER_VISITORS,
@@ -751,7 +749,7 @@ function _prod_check_site_mail($caller = 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  $site_mail = variable_get('site_mail', '');
+  $site_mail = config_get('system.core', 'site_mail');
   $arguments = array('%mail' => $site_mail);
   $check['prod_check_site_mail'] = array(
     '#title' => t($title),
@@ -1008,7 +1006,7 @@ function _prod_check_page_cache($caller = 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  if (variable_get('cache', 0) == 0) {
+  if (config_get('system.core', 'cache') == 0) {
     $error = TRUE;
     // Maybe Boost is enabled?
     if (variable_get('boost_enabled', 0) == 1) {
@@ -1054,7 +1052,7 @@ function _prod_check_page_compression($caller = 'internal') {
     $path .= '/boost';
   }
 
-  if (variable_get('page_compression', 0) == 0) {
+  if (config_get('system.core', 'page_compression') == 0) {
     $status = FALSE;
     // When using Varnish, turning off page compression is a good thing!
     if (module_exists('varnish') || module_exists('steroids')) {
@@ -1233,7 +1231,7 @@ function _prod_check_preprocess_css($caller = 'internal') {
   $path = 'admin/config/development/performance';
 
   // Check settings.
-  if (variable_get('preprocess_css', 0) == 0) {
+  if (config_get('system.core', 'preprocess_css') == 0) {
     $state = FALSE;
     // TODO: In D6 there was an extra check on the 'advagg' module. Keep an eye out for a D7 port or a D7 alternative!
   }
@@ -1266,7 +1264,7 @@ function _prod_check_preprocess_js($caller = 'internal') {
   $path = 'admin/config/development/performance';
 
   // Check settings.
-  if (variable_get('preprocess_js', 0) == 0) {
+  if (config_get('system.core', 'preprocess_js') == 0) {
     $state = FALSE;
     // TODO: In D6 there was an extra check on the 'advagg' module. Keep an eye out for a D7 port or a D7 alternative!
   }
@@ -1313,7 +1311,7 @@ function _prod_check_node_available($caller = 'internal') {
       $secure = TRUE;
       break;
     default:
-      $frontpage = variable_get('site_frontpage', '');
+      $frontpage = config_get('system.core', 'site_frontpage');
       if (!empty($frontpage) && $frontpage != 'node') {
         $msg = t('The default /node page created by Drupal core is still enabled. With improper setup of node types, this can reveal sensitive information (e.g. using the profile module with automatic publish to front activated)!');
         $secure = FALSE;
@@ -1387,7 +1385,7 @@ function _prod_check_anonymous_rights($caller = 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  $perms = db_query('SELECT permission FROM {role_permission} WHERE rid = 1')->fetchCol();
+  $perms = config_get('user.role.anonymous', 'permissions');
   $perms = implode(', ', $perms);
 
   if (preg_match('/(\baccess\sall\b|\badd\b|\badminister\b|\bchange\b|\bclear\b|\bcreate\b|\bdelete\b|\bedit\b|\brevert\b|\bsave\b|\bsend\smail\b|\bset\svariable\b|\bupdate\b|\bupload\b|\bPHP\b|\bdevel\b)/i', $perms)) {
@@ -1871,15 +1869,15 @@ function _prod_check_pathauto($caller = 'internal') {
   $title_ok = 'settings';
   $text_ok = 'Check the !link to verify if they are as you expect.';
 
-  $title = 'Path auto';
-  $path = 'admin/config/search/path/settings';
+  $title = 'Path';
+  $path = 'admin/config/search/path';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
   $check['prod_check_pathauto'] = array(
     '#title' => t($title),
-    '#state' => module_exists('pathauto'),
+    '#state' => module_exists('path'),
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
@@ -2071,6 +2069,6 @@ function _prod_check_module_list($caller = 'internal') {
 // Last cron run
 function _prod_check_cron_last($caller = 'internal') {
   $check = array();
-  $check['prod_check_cron_last'] = variable_get('cron_last', 0);
+  $check['prod_check_cron_last'] = state_get('cron_last', 0);
   return prod_check_execute_check($check, $caller, 'prod_mon');
 }
