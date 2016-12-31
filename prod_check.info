@@ -1,5 +1,8 @@
 name = Production check
 description = Check a site to see if it's properly setup for production use.
 package = Monitoring
-core = 7.x
+backdrop = 1.x
+type = module
 configure = admin/config/system/prod-check
+
+dependencies[] = xmlrpc

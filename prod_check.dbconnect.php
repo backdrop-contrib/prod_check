@@ -2,12 +2,12 @@
 
 /**
  * @file
- * Simple database connection check that can be placed anywhere within a Drupal
+ * Simple database connection check that can be placed anywhere within a Backdrop
  * installation. Does NOT need to be in the root where index.php resides!
  */
 
 /**
- * Locate the actual Drupal root. Based on drush_locate_root().
+ * Locate the actual Backdrop root. Based on drush_locate_root().
  */
 function locate_root() {
   $drupal_root = FALSE;
@@ -45,7 +45,7 @@ function locate_root() {
 }
 
 /**
- * Based on the DrupalBoot*::valid_root() from Drush.
+ * Based on the BackdropBoot*::valid_root() from Drush.
  */
 function valid_root($path) {
   if (!empty($path) && is_dir($path) && file_exists($path . '/index.php')) {

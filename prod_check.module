@@ -572,7 +572,7 @@ function _prod_check_functions() {
   // Settings
   $functions['settings'] = array(
     'title' => 'Settings',
-    'description' => 'Checks wether various settings are fit for a production environment.',
+    'description' => 'Checks whether various settings are fit for a production environment.',
     'functions' => array(
       '_prod_check_error_reporting' =>  'Error reporting',
       '_prod_check_user_register' => 'User registration',
@@ -778,7 +778,7 @@ function _prod_check_poormanscron($caller = 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
 
-  $cron_interval = variable_get('cron_safe_threshold', DRUPAL_CRON_DEFAULT_THRESHOLD);
+  $cron_interval = config_get('system.core', 'cron_safe_threshold');
 
   // TODO: add some form of cron interval checking here so we can check if the
   // cron is running regularly AND the poormanscron is disabled?
