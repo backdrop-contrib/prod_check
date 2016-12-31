@@ -60,11 +60,16 @@ Be sure to activate the fetching of performance data in the site's config!
 Dependencies
 ------------
 
+- XML-RPC
+
+In Backdrop XML-RPC is a separate contrib module so you are required to install it
+in order to use this one.
+
+### Drupal modules (not yet ported to Backdrop CMS)
 - Nagios   http://drupal.org/project/nagios
 
-There are no true dependencies defined in the .info file, but naturally you need
-to install the Nagios module if you would like to integrate Production check
-with your Nagios monitoring setup.
+Naturally you need to install the Nagios module if you would like to integrate
+Production check with your Nagios monitoring setup.
 
 - Performance logging   http://drupal.org/project/performance
 
@@ -83,24 +88,21 @@ Installation
 
 ###Production check
 
-1. Extract the prod_check module and place it in /sites/all/modules/contrib
+1. Extract the prod_check module and place it in /modules/contrib
 
-2. Remove the 'prod_monitor' folder and all it's contents
-
-3. Upload the prod_check folder to the websites you wish to check / monitor,
+2. Upload the prod_check folder to the websites you wish to check / monitor,
  enable the module and adjust it's settings using /admin/config/system/prod-check.
 
-4. You can check the /admin/reports/status page to verify if the Production
+3. You can check the /admin/reports/status page to verify if the Production
  check setup described above was executed correctly and no errors / warnings are
  reported.
 
-5. You can find the result of the Production check module on
+4. You can find the result of the Production check module on
  /admin/reports/prod-check
 
 ###Production monitor
 
-1. Grab the prod_monitor folder from the package and upload it to your
- 'monitoring site' and activate the module.
+1. Upload the module to your 'monitoring site' and activate the module.
 2. Make sure that the site you wish to monitor is running the prod_check module
 3. Navigate to the prod_check settings page and activate XMLRPC and add an API
  key to 'secure' the connection. The key is limited to 128 characters.
@@ -117,10 +119,12 @@ Installation
 To automatically check the site status and/or module updates on cron, you will
 need to install drush and configure the following tasks in the crontab:
 
+```
 # Check ALL sites for updates, once a day starting at 0100H at night.
 0 1 * * *    /path/to/drush -r /path/to/docroot prod-monitor-updates -y --quiet
 # Fetch ALL site data every five minutes (or whatever you please obviously).
 */5 * * * *    /path/to/drush -r /path/to/docroot  prod-monitor-fetch -y --quiet
+```
 
 Obviously, the time and frequency of these cron jobs is at your discretion.
 Do note that, depending on the number of sites you have configured, the crons
@@ -133,8 +137,8 @@ When upgrading Production monitor to a newer version, always run update.php to
 verify if there are database or other updates that need to be applied!
 When ignoring this step, you might get errors and/or strange behavior!
 
-Nagios
-------
+Nagios (not yet ported to Backdrop)
+-----------------------------------
 
 1. Download and install the Nagios module from http://drupal.org/project/nagios
  as per its readme instructions
@@ -144,7 +148,7 @@ Nagios
  Nagios.
 4. Save the settings and you're good to go!
 
-Performance logging
+Performance logging (not yet ported to Backdrop)
 -------------------
 
 1. Download and install the Nagios module from http://drupal.org/project/performance
@@ -152,8 +156,8 @@ Performance logging
 2. Enable fetching of performance data on /admin/reports/prod-monitor when
  adding or editing a site.
 
-Drush
------
+Drush (not yet ported to Backdrop)
+---------------------------------
 
 You can view the Production Check statuspage using Drush, simply by using this
 command:
@@ -234,6 +238,7 @@ you should assign a proper amount of RAM to APC/OPcache. For a dedicated setup
 To tune your setup, you can use the aforementioned hidden link provided by
 Production check. You can see the memory usage there, verify your settings and
 much more.
+
 To help you out even further, an APC config file can be found in
 docs/apc.ini.txt. You must obviousely rename this file and omit the .txt
 extension (drupal.org CVS did not seem to accept files with .ini extension?).
@@ -250,6 +255,7 @@ When new checks are added to the prod_check module, the prod_monitor module will
 automatically fetch them from the remote server when you edit the settings. Upon
 displaying the edit form, XMLRPC is ALWAYS used to build op the checkboxes array
 so that you always have the latest options available.
+
 Cron is NOT used to do this, since we want to keep the transfer to a minimum.
 
 
@@ -289,17 +295,20 @@ The sections might shift over time (maybe some stuff should go under a
 The checks itself should be self explanatory to Drupal developers, so they won't
 be described in detail here.
 
-
-Support
+License
 -------
+This project is GPL v2 software. See the LICENSE.txt file in this directory for complete text.
 
-For support requests, bug reports, and feature requests, please us the issue queue
-of Prod check on http://drupal.org/project/issues/prod_check.
+Maintainers
+-----------
 
+Looking for maintainers for Backdrop.
 
-Thanks
-------
+Adapted for Backdrop CMS by Herb v/d Dool (https://github.com/herbdool).
 
+Original Drupal 7 maintainers and contributors:
+* malc0mn (https://www.drupal.org/u/malc0mn)
+* aspilicious (https://www.drupal.org/u/aspilicious)
 * kbahey (http://drupal.org/user/4063) for making the performance logging
 integration possible!
-* bocaj (http://drupal.org/user/582042) for all the great contributions!
+* bocaj (http://drupal.org/user/582042)
