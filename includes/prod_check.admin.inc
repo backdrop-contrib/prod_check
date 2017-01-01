@@ -4,7 +4,7 @@
  * Build status page.
  */
 function prod_check_status() {
-  drupal_set_title(t('Production check status'));
+  backdrop_set_title(t('Production check status'));
 
   $output = '';
 
@@ -36,11 +36,11 @@ function prod_check_status() {
  */
 function prod_check_settings_form($form, &$form_state) {
   $config = config('prod_check.settings');
-  drupal_set_title(t('Production check settings'));
+  backdrop_set_title(t('Production check settings'));
   $form = array();
 
   // Add stylesheets & CSS.
-  $base = drupal_get_path('module', 'prod_check');
+  $base = backdrop_get_path('module', 'prod_check');
   $form['#attached'] = array(
     'css' => array(
       'type' => 'file',
@@ -394,11 +394,11 @@ function prod_check_enable_nagios($form, &$form_state) {
 function prod_check_settings_form_validate($form, &$form_state) {
   // Had to add CSS again here since it was lost on form errors. Weird, doesn't
   // seem logical...
-  $base = drupal_get_path('module', 'prod_check');
-  drupal_add_css($base . '/css/prod-check.css');
-  drupal_add_js($base . '/js/jquery.equalheights.js');
-  drupal_add_js($base . '/js/jquery.maskedinput.min.js');
-  drupal_add_js($base . '/js/prod-check.js');
+  $base = backdrop_get_path('module', 'prod_check');
+  backdrop_add_css($base . '/css/prod-check.css');
+  backdrop_add_js($base . '/js/jquery.equalheights.js');
+  backdrop_add_js($base . '/js/jquery.maskedinput.min.js');
+  backdrop_add_js($base . '/js/prod-check.js');
 
   if (module_exists('dblog')) {
     if (!is_numeric($form_state['values']['prod_check_dblog_php_threshold'])) {
@@ -510,13 +510,13 @@ function prod_check_settings_form_submit($form, &$form_state) {
         $config->set('enable_nagios', 0);
       }
       $config->save();
-      drupal_set_message(t('The configuration options have been saved.'));
+      backdrop_set_message(t('The configuration options have been saved.'));
       break;
     case t('Reset to defaults'):
       $config->delete();
       config_install_default_config('prod_check.settings');
       cache_clear_all('variables', 'cache_bootstrap');
-      drupal_set_message(t('The configuration options have been reset to their default values.'));
+      backdrop_set_message(t('The configuration options have been reset to their default values.'));
       break;
   }
 }
@@ -525,7 +525,7 @@ function prod_check_settings_form_submit($form, &$form_state) {
  * Setup site for production mode.
  */
 function prod_check_prod_mode_form() {
-  drupal_set_title(t('Switch to production mode'));
+  backdrop_set_title(t('Switch to production mode'));
 
   $form = array();
 
@@ -617,15 +617,15 @@ function prod_check_prod_mode_form_validate($form, &$form_state) {
 function prod_check_prod_mode_form_submit($form, &$form_state) {
   // Adjust settings.
   $variables = prod_check_prod_mode_settings($form_state['values']);
-  drupal_set_message(t('The following settings have been changed: %variables.', array('%variables' => implode(', ', array_keys($variables)))));
+  backdrop_set_message(t('The following settings have been changed: %variables.', array('%variables' => implode(', ', array_keys($variables)))));
 
   // Enable / disable modules.
   //$modules = prod_check_prod_mode_modules($form_state['values']);
   if (!empty($modules['disable'])) {
-    drupal_set_message(t('The following modules have been <strong>disabled</strong>: %modules.', array('%modules' => implode(', ', $modules['disable']))));
+    backdrop_set_message(t('The following modules have been <strong>disabled</strong>: %modules.', array('%modules' => implode(', ', $modules['disable']))));
   }
   if (!empty($modules['enable'])) {
-    drupal_set_message(t('The following modules have been <strong>enabled</strong>: %modules.', array('%modules' => implode(', ', $modules['enable']))));
+    backdrop_set_message(t('The following modules have been <strong>enabled</strong>: %modules.', array('%modules' => implode(', ', $modules['enable']))));
   }
 
   $form_state['redirect'] = 'admin/reports/prod-check';
@@ -693,8 +693,8 @@ function prod_check_prod_mode_settings($settings) {
   }
 
   // Clear caches like the system_performance_settings() form does.
-  drupal_clear_css_cache();
-  drupal_clear_js_cache();
+  backdrop_clear_css_cache();
+  backdrop_clear_js_cache();
   // Instead of calling system_clear_page_cache_submit()
   cache_clear_all('*', 'cache_page', TRUE);
 
@@ -737,7 +737,7 @@ function prod_check_prod_mode_modules($options) {
   }
 
   // We cannot check if a module is available on the file system. At least,
-  // there is not a function in Drupal that I know of to do this and I could not
+  // there is not a function in Backdrop that I know of to do this and I could not
   // find one. Hence this approach, until there's a better way.
   if (!empty($modules['enable'])) {
     module_enable($modules['enable']);
@@ -846,7 +846,7 @@ function prod_check_dbstatus() {
       }
       elseif (is_array($result) || is_object($result)) {
         $add_js = TRUE;
-        include_once DRUPAL_ROOT . '/includes/utility.inc';
+        include_once BACKDROP_ROOT . '/includes/utility.inc';
 
         $class = strtolower(str_replace('_', '-', $constant));
 
@@ -863,7 +863,7 @@ function prod_check_dbstatus() {
 
         // Seemed a bit overkill to create a css file only for this display:none
         // thingy.
-        $result = $link . '<pre class="' . $class . '" style="display:none;">' . drupal_var_export($result) . '</pre>';
+        $result = $link . '<pre class="' . $class . '" style="display:none;">' . backdrop_var_export($result) . '</pre>';
       }
       $additional .= $name . ': ' . $result . "<br />\n";
     } catch (Exception $e) {}
@@ -871,8 +871,8 @@ function prod_check_dbstatus() {
   $status = "$additional<br />\n$status";
 
   if ($add_js) {
-    $base = drupal_get_path('module', 'prod_check');
-    drupal_add_js($base . '/js/prod-check-database.js');
+    $base = backdrop_get_path('module', 'prod_check');
+    backdrop_add_js($base . '/js/prod-check-database.js');
   }
 
   return theme('prod_check_dbstatus', array('title' => $title, 'status' => $status, 'details' => $details));
@@ -1050,7 +1050,7 @@ function prod_check_apc_opc() {
   // functions as APC so instead of adding PHP version checks, we do it this
   // way.
   if (function_exists('opcache_get_status')) {
-    include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.opcache.inc');
+    include(backdrop_get_path('module', 'prod_check') . '/includes/prod_check.opcache.inc');
     exit;
   }
   // APC.
@@ -1058,7 +1058,7 @@ function prod_check_apc_opc() {
     $config = config('prod_check.settings');
     define('ADMIN_USERNAME', $config->get('apcuser'));
     define('ADMIN_PASSWORD', $config->get('apcpass'));
-    include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.apc.inc');
+    include(backdrop_get_path('module', 'prod_check') . '/includes/prod_check.apc.inc');
     exit;
   }
   else {
@@ -1075,7 +1075,7 @@ function prod_check_memcache() {
 
   global $MEMCACHE_SERVERS;
   $MEMCACHE_SERVERS = array_keys($memcache_servers);
-  include(drupal_get_path('module', 'prod_check') . '/includes/prod_check.memcache.inc');
+  include(backdrop_get_path('module', 'prod_check') . '/includes/prod_check.memcache.inc');
 
   exit;
 }

@@ -49,8 +49,8 @@ function locate_root() {
  */
 function valid_root($path) {
   if (!empty($path) && is_dir($path) && file_exists($path . '/index.php')) {
-    $candidate = 'includes/common.inc';
-    if (file_exists($path . '/' . $candidate) && file_exists($path . '/misc/drupal.js')) {
+    $candidate = 'core/includes/common.inc';
+    if (file_exists($path . '/' . $candidate) && file_exists($path . 'core/misc/backdrop.js')) {
       return TRUE;
     }
   }
@@ -73,9 +73,9 @@ function shift_path_up($path) {
 /**
  * Do the actual database connection check.
  */
-define('DRUPAL_ROOT', locate_root());
-require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
-drupal_bootstrap(DRUPAL_BOOTSTRAP_DATABASE);
+define('BACKDROP_ROOT', locate_root());
+require_once BACKDROP_ROOT . '/care/includes/bootstrap.inc';
+backdrop_bootstrap(DRUPAL_BOOTSTRAP_DATABASE);
 
 $result = db_query('SELECT COUNT(filename) FROM {system}')->fetchField();
 

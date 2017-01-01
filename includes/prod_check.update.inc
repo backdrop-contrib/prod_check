@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ALL code here is taken from the Drupal core's update module. prod_check
+ * ALL code here is taken from the Backdrop core's update module. prod_check
  * recommends that you turn this module off, so we provide the VERY BASIC
  * functionality to get a list of the installed modules with version info and
  * transfer this to prod_monitor over XMLRPC (alot of data here!) so that
@@ -112,10 +112,10 @@ function _prod_check_process_info_list(&$projects, $list, $project_type, $status
     $project_name = $file->info['project'];
 
     // Figure out what project type we're going to use to display this module
-    // or theme. If the project name is 'drupal', we don't want it to show up
-    // under the usual "Modules" section, we put it at a special "Drupal Core"
+    // or theme. If the project name is 'backdrop', we don't want it to show up
+    // under the usual "Modules" section, we put it at a special "Backdrop Core"
     // section at the top of the report.
-    if ($project_name == 'drupal') {
+    if ($project_name == 'Backdrop') {
       $project_display_type = 'core';
     }
     else {
@@ -129,8 +129,8 @@ function _prod_check_process_info_list(&$projects, $list, $project_type, $status
     }
     // Add a list of sub-themes that "depend on" the project and a list of base
     // themes that are "required by" the project.
-    if ($project_name == 'drupal') {
-      // Drupal core is always required, so this extra info would be noise.
+    if ($project_name == 'backdrop') {
+      // Backdrop core is always required, so this extra info would be noise.
       $sub_themes = array();
       $base_themes = array();
     }
@@ -197,7 +197,7 @@ function _prod_check_get_project_name($file) {
     $project_name = $file->info['project'];
   }
   elseif (isset($file->info['package']) && (strpos($file->info['package'], 'Core') === 0)) {
-    $project_name = 'drupal';
+    $project_name = 'backdrop';
   }
   return $project_name;
 }
@@ -208,7 +208,7 @@ function _prod_check_get_project_name($file) {
  * Filter the project .info data to only save attributes we need.
  *
  * @param array $info
- *   Array of .info file data as returned by drupal_parse_info_file().
+ *   Array of .info file data as returned by backdrop_parse_info_file().
  *
  * @return
  *   Array of .info file data we need for the Update manager.
@@ -226,5 +226,5 @@ function _prod_check_filter_project_info($info) {
     'project status url',
     'version',
   );
-  return array_intersect_key($info, drupal_map_assoc($whitelist));
+  return array_intersect_key($info, backdrop_map_assoc($whitelist));
 }

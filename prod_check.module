@@ -93,7 +93,7 @@ function prod_check_menu() {
   $items['admin/reports/prod-check/prod-mode'] = array(
     'title' => 'Production mode',
     'description' => 'Setup this site so it is ready for production.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('prod_check_prod_mode_form'),
     'access callback' => 'user_access',
     'access arguments' => array('switch to production mode'),
@@ -105,7 +105,7 @@ function prod_check_menu() {
   $items['admin/config/system/prod-check'] = array(
     'title' => 'Production check',
     'description' => 'Setup the Production check module.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('prod_check_settings_form'),
     'access callback' => 'user_access',
     'access arguments' => array('administer production check'),
@@ -168,10 +168,10 @@ function prod_check_theme($existing, $type, $theme, $path) {
 function _prod_check_get_disabled_modules_whitelist() {
   $modules = array();
   $modules += module_invoke_all('prod_check_disabled_modules_whitelist');
-  $modules = array_unique(array_map('drupal_strtolower', $modules));
+  $modules = array_unique(array_map('backdrop_strtolower', $modules));
 
   // Allow other modules to add or delete modules to force check
-  drupal_alter('prod_check_disabled_modules_whitelist', $modules);
+  backdrop_alter('prod_check_disabled_modules_whitelist', $modules);
 
   return $modules;
 }
@@ -212,15 +212,15 @@ function prod_check_update_projects_alter(&$projects) {
  */
 function prod_check_nagios_status_page() {
   // Make sure this page is not cached.
-  drupal_page_is_cacheable(FALSE);
+  backdrop_page_is_cacheable(FALSE);
   header("Pragma: no-cache");
   header("Expires: 0");
 
   if ($_SERVER['HTTP_USER_AGENT'] != config_get('nagios.settings', 'ua')) {
     switch (config_get('prod_check.settings', 'nagios_unique')) {
-      case '404': drupal_not_found();
+      case '404': backdrop_not_found();
         break;
-      case 'home': drupal_goto('<front>');
+      case 'home': backdrop_goto('<front>');
         break;
       default: nagios_status_page();
     }
@@ -514,7 +514,7 @@ function prod_check_execute_check($checks, $caller, $compatibility = 'all') {
  * Helper function to generate generic 'settings OK' description.
  */
 function prod_check_ok_title($title, $path, $text = 'Your !link settings are OK for production use.') {
-  return t($text, array('!link' => '<em>' . l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())) . '</em>'));
+  return t($text, array('!link' => '<em>' . l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => backdrop_get_destination())) . '</em>'));
 }
 
 /**
@@ -526,7 +526,7 @@ function prod_check_link_array($title, $path, $fragment=NULL) {
       'title' => t($title),
     ),
     'query' => array(
-      drupal_get_destination(),
+      backdrop_get_destination(),
     ),
   );
   if ($fragment) {
@@ -635,7 +635,7 @@ function _prod_check_functions() {
 
   // Invoke hook_prod_check_alter() here to add additional checks implemented by third
   // party modules.
-  drupal_alter('prod_check', $functions);
+  backdrop_alter('prod_check', $functions);
 
   return $functions;
 }
@@ -669,7 +669,7 @@ function _prod_check_error_reporting($caller = 'internal') {
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are set to %setting1, they should be set to %setting2 on a producion environment!',
       array(
-        '!link' => '<em>' . l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())) . '</em>',
+        '!link' => '<em>' . l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => backdrop_get_destination())) . '</em>',
         '%setting1' => $setting[$current],
         '%setting2' => $setting[ERROR_REPORTING_HIDE],
       )
@@ -704,7 +704,7 @@ function _prod_check_user_register($caller = 'internal') {
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are set to %setting1. Are you sure this is what you want and did not mean to use %setting2? With improperly setup access rights, this can be dangerous...',
       array(
-        '!link' => '<em>' . l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())) . '</em>',
+        '!link' => '<em>' . l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => backdrop_get_destination())) . '</em>',
         '%setting1' => $setting[$current],
         '%setting2' => $setting[USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL],
       )
@@ -778,8 +778,8 @@ function _prod_check_poormanscron($caller = 'internal') {
     '#title' => t($title),
     '#state' => $cron_interval == 0 /*&& $cron_interval_regularity*/,
     '#severity' => ($caller == 'nagios') ? NAGIOS_STATUS_WARNING : PROD_CHECK_REQUIREMENT_WARNING,
-    '#value_ok'  => t("Drupal's built in cron mechanism is disabled."),
-    '#value_nok'  => t("Drupal's built in cron mechanism is set to run every %interval.", array('%interval' => format_interval($cron_interval))),
+    '#value_ok'  => t("Backdrop's built in cron mechanism is disabled."),
+    '#value_nok'  => t("Backdrop's built in cron mechanism is set to run every %interval.", array('%interval' => format_interval($cron_interval))),
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('The !link interval should be disabled if you have also setup a crontab or scheduled task for this to avoid running the cron more often than you have planned to!', prod_check_link_array($title, $path)),
     '#nagios_key' => 'CRON',
@@ -1001,7 +1001,7 @@ function _prod_check_page_cache($caller = 'internal') {
     '#description_ok'  => prod_check_ok_title($title, $path),
     '#description_nok' => t('Your !link settings are disabled. You should at least set page caching to "Cache pages for anonymous users" on a production site! You should also consider using the !boost module or a more powerful system like !varnish!',
       array(
-        '!link' => '<em>' . l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => drupal_get_destination())) . '</em>',
+        '!link' => '<em>' . l(t($title), $path, array('attributes' => array('title' => t($title)), 'query' => backdrop_get_destination())) . '</em>',
         '!boost' => '<em>' . l(t('Boost'), 'http://drupal.org/project/boost', array('attributes' => array('title' => t('Boost')))) . '</em>',
         '!varnish' => '<em>' . l(t('Varnish'), 'http://drupal.org/project/steroids', array('attributes' => array('title' => t('Varnish')))) . '</em>',
       )
@@ -1160,7 +1160,7 @@ function _prod_check_boost($caller = 'internal') {
       '#description_ok'  => prod_check_ok_title($subtitle, $path_htaccess),
       '#description_nok' => t('Your !link settings are not ok! You should enable entity tags (!etag) in Boost so that user side caching and bandwith usage will be optimal! You do need to enable !mod for this to work.',
         array(
-          '!link' => '<em>' . l(t($subtitle), $path_htaccess, array('attributes' => array('title' => t($subtitle)), 'query' => drupal_get_destination())) . '</em>',
+          '!link' => '<em>' . l(t($subtitle), $path_htaccess, array('attributes' => array('title' => t($subtitle)), 'query' => backdrop_get_destination())) . '</em>',
           '!etag' => '<em>' . l(t('ETags'), 'http://en.wikipedia.org/wiki/HTTP_ETag', array('attributes' => array('title' => t('Etags')))) . '</em>',
           '!mod' => '<em>' . l(t('mod_headers'), 'http://httpd.apache.org/docs/2.0/mod/mod_headers.html', array('attributes' => array('title' => t('mod_headers')))) . '</em>',
         )
@@ -1257,7 +1257,7 @@ function _prod_check_user_pass($caller = 'internal') {
   // Be sure to omit the anonymous user with id 0.
   $result = db_query('SELECT uid, name FROM {users} WHERE uid <> 0 AND status = 1 AND MD5(name) = pass');
   foreach ($result as $row) {
-      $list .= l($row['name'], $path . 'user/' . $row['uid'] . '/edit', array('attributes' => array('title' => t('Edit user') . ' ' . $row['name']), 'query' => drupal_get_destination())) . ', ';
+      $list .= l($row['name'], $path . 'user/' . $row['uid'] . '/edit', array('attributes' => array('title' => t('Edit user') . ' ' . $row['name']), 'query' => backdrop_get_destination())) . ', ';
   }
   if (!empty($list)) {
     $secure = FALSE;
@@ -1285,7 +1285,7 @@ function _prod_check_anonymous_rights($caller = 'internal') {
   $secure = TRUE;
 
   $title = 'Anonymous user rights';
-  $path = 'admin/people/permissions';
+  $path = 'admin/config/people/permissions';
   if ($caller != 'internal') {
     $path = PRODCHECK_BASEURL . $path;
   }
@@ -1544,7 +1544,7 @@ function _prod_check_update_status($caller = 'internal') {
     '#value_ok'  => t('Disabled'),
     '#value_nok'  => t('Enabled'),
     '#description_ok'  => t('Your settings are OK for production use.'),
-    '#description_nok' => t('You have enabled the !link module. It would be better to turn this off on production, contrary to what Drupal core claims, and keep it running on development. Updating and testing should happen on development before deploying to production anyway.', prod_check_link_array($title, $path)),
+    '#description_nok' => t('You have enabled the !link module. It would be better to turn this off on production, contrary to what Backdrop core claims, and keep it running on development. Updating and testing should happen on development before deploying to production anyway.', prod_check_link_array($title, $path)),
     '#nagios_key' => 'UPD',
     '#nagios_type' => 'state',
   );
@@ -1626,7 +1626,7 @@ function _prod_check_missing_module_files($caller = 'internal') {
   // http://drupal.org/node/1080330.
   $result = db_query("SELECT filename FROM {system} WHERE status = 1 AND filename NOT LIKE '%.info'");
   foreach ($result as $row) {
-    $path = DRUPAL_ROOT . '/' . $row->filename;
+    $path = BACKDROP_ROOT . '/' . $row->filename;
     if(!file_exists($path)) {
       $modules[] = $row->filename;
       $missing++;
@@ -1716,7 +1716,7 @@ function _prod_check_metatag($caller = 'internal') {
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title_ok, $path, $text_ok),
-    '#description_nok' => t('You have not enabled the !link module. If you care about ranking your site in search engines, this module is an absolute must.', prod_check_link_array($title, 'http://drupal.org/project/metatag')),
+    '#description_nok' => t('You have not enabled the !link module. If you care about ranking your site in search engines, this module is an absolute must.', prod_check_link_array($title, 'http://backdropcms.org/project/metatag')),
     '#nagios_key' => 'META',
     '#nagios_type' => 'state',
   );
@@ -1743,7 +1743,7 @@ function _prod_check_pathauto($caller = 'internal') {
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title_ok, $path, $text_ok),
-    '#description_nok' => t('You have not enabled the !link module. This module is a must for search engines. Pathauto will automatically generate human readable URLs for every piece of content in the site.', prod_check_link_array($title, 'http://drupal.org/project/pathauto')),
+    '#description_nok' => t('You have not enabled the core Path module. This module is a must for search engines. Path will automatically generate human readable URLs for every piece of content in the site.'),
     '#nagios_key' => 'PATH',
     '#nagios_type' => 'state',
   );
@@ -1770,7 +1770,7 @@ function _prod_check_redirect($caller = 'internal') {
     '#value_ok'  => t('Enabled'),
     '#value_nok'  => t('Disabled'),
     '#description_ok'  => prod_check_ok_title($title_ok, $path, $text_ok),
-    '#description_nok' => t('You have not enabled the !link module. This module ensures, when properly configured, that when paths for content are changhed, the old paths are given a 301 redirect to the new paths.', prod_check_link_array($title, 'http://drupal.org/project/redirect')),
+    '#description_nok' => t('You have not enabled the core Redirect module. This module ensures, when properly configured, that when paths for content are changhed, the old paths are given a 301 redirect to the new paths.'),
     '#nagios_key' => 'REDIR',
     '#nagios_type' => 'state',
   );
@@ -1786,7 +1786,7 @@ function _prod_check_www($caller = 'internal') {
   $error = FALSE;
   $redirect_code = 0;
 
-  // We use base_path() in case Drupal is installed in a subdir.
+  // We use base_path() in case Backdrop is installed in a subdir.
   $url = $original = $base_url . base_path();
   $www = '://www.';
   // If the current domain starts with www. ...
@@ -1800,7 +1800,7 @@ function _prod_check_www($caller = 'internal') {
   }
 
   // Perform an HTTP request.
-  $result = drupal_http_request($url);
+  $result = backdrop_http_request($url);
   // The result code will be 0 when the call could not be made or will be
   // negative when there is an internal error. Only if we succeed in making the
   // call, we will make the check count, otherwise this check will be 'skipped'.
@@ -1823,7 +1823,7 @@ function _prod_check_www($caller = 'internal') {
         '%original' => $original,
         '%code' => $redirect_code,
       )),
-      '#description_nok' => t("You should make sure you setup an HTTP redirect with status code 301 from %url to %original (or vice versa) to prevent duplicate content punishment by search engines such as Google.<br />You can do this easily by uncommenting the right block in Drupal's .htaccess file.", array(
+      '#description_nok' => t("You should make sure you setup an HTTP redirect with status code 301 from %url to %original (or vice versa) to prevent duplicate content punishment by search engines such as Google.<br />You can do this easily by uncommenting the right block in Backdrop's .htaccess file.", array(
         '%url' => $url,
         '%original' => $original,
       )),
@@ -1854,7 +1854,7 @@ function _prod_check_xmlsitemap($caller = 'internal') {
   if(!module_exists('xmlsitemap')) {
     $error = TRUE;
     $value_nok = t('Disabled');
-    $msg_nok = t('You have not enabled the !link module. This module generates an XML sitemap which can be submitted to search engines, guaranteeing optimal indexation of all urls within the site.', prod_check_link_array($title, 'http://drupal.org/project/xmlsitemap'));
+    $msg_nok = t('You have not enabled the !link module. This module generates an XML sitemap which can be submitted to search engines, guaranteeing optimal indexation of all urls within the site.', prod_check_link_array($title, 'http://backdropcms.org/project/xmlsitemap'));
   }
   elseif (strtolower($xml_base_url) != strtolower($GLOBALS['base_url'])) {
     $error = TRUE;
@@ -1913,9 +1913,9 @@ function _prod_check_module_list($caller = 'internal') {
         _prod_check_process_info_list($projects, system_rebuild_module_data(), 'module', FALSE);
         _prod_check_process_info_list($projects, system_rebuild_theme_data(), 'theme', FALSE);
         // Allow other modules to alter projects before fetching and comparing.
-        drupal_alter('update_projects', $projects);
+        backdrop_alter('update_projects', $projects);
         $check['prod_check_module_list']['projects'] = $projects;
-        $check['prod_check_module_list']['site_key'] = drupal_hmac_base64($base_url, drupal_get_private_key());
+        $check['prod_check_module_list']['site_key'] = backdrop_hmac_base64($base_url, backdrop_get_private_key());
         $check['prod_check_module_list']['last_update'] = $now;
 
         // Remember when we ran last.
