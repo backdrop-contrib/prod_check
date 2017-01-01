@@ -534,15 +534,18 @@ function prod_check_prod_mode_form() {
   $form['help'] = array(
     '#markup' => '<p>' . t('Submitting this form will switch this website to <em>production mode</em>. This means that various settings will be adjusted in order to fix most of the problems reported on the status page. <strong>Some modules will be disabled as well!</strong>') . '</p>',
   );
-
-  $form['site_mail'] = array(
+  $form['settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Settings'),
+  );
+  $form['settings']['site_mail'] = array(
     '#type' => 'textfield',
     '#title' => t('Site e-mail address'),
     '#description' => t('This field is optional and will be used to setup the default e-mail address of this site. <strong>Currently set to %mail.</strong>', array('%mail' => config_get('system.core', 'site_mail'))),
   );
 
   if (module_exists('webform')) {
-    $form['webform_default_from_address'] = array(
+    $form['settings']['webform_default_from_address'] = array(
       '#type' => 'textfield',
       '#title' => t('Webform default from e-mail address'),
       '#description' => t('This field is optional and will be used to setup the default from e-mail address for <em>Webform</em>. <strong>Currently set to %mail.</strong>', array('%mail' => config_get('webform.settings', 'default_from_address'))),
@@ -550,22 +553,25 @@ function prod_check_prod_mode_form() {
   }
 
   if (module_exists('googleanalytics')) {
-    $form['googleanalytics_account'] = array(
+    $form['settings']['googleanalytics_account'] = array(
       '#type' => 'textfield',
       '#title' => t('Google Analytics Web Property ID'),
       '#description' => t('This field is optional and will be used to setup the <em>Google Analytics</em> account. <strong>Currently set to %account.</strong>', array('%account' => config_get('googleanalytics.settings', 'account'))),
     );
   }
-
+  $form['modules'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Modules'),
+  );
   if (module_exists('dblog')) {
-    $form['dblog'] = array(
+    $form['modules']['dblog'] = array(
       '#type' => 'checkbox',
       '#title' => t('Disable <em>Database logging</em>'),
       '#description' => t('If ticked, this will disable the <em>dblog</em> module wich could generate too much overhead on high traffic sites.'),
     );
   }
 
-  $form['nagios'] = array(
+  $form['modules']['nagios'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable <em>Nagios</em>'),
     '#description' => t('If ticked, this will enable the <em>Nagios</em> monitoring module if it is present.'),
@@ -614,7 +620,7 @@ function prod_check_prod_mode_form_submit($form, &$form_state) {
   drupal_set_message(t('The following settings have been changed: %variables.', array('%variables' => implode(', ', array_keys($variables)))));
 
   // Enable / disable modules.
-  $modules = prod_check_prod_mode_modules($form_state['values']);
+  //$modules = prod_check_prod_mode_modules($form_state['values']);
   if (!empty($modules['disable'])) {
     drupal_set_message(t('The following modules have been <strong>disabled</strong>: %modules.', array('%modules' => implode(', ', $modules['disable']))));
   }
@@ -628,8 +634,9 @@ function prod_check_prod_mode_form_submit($form, &$form_state) {
 /**
  * Helper function to adjust settings. Also used by Drush.
  */
-function prod_check_prod_mode_settings($options) {
-  $variables = array(
+function prod_check_prod_mode_settings($settings) {
+  $result= array();
+  $settings = array_merge($settings, array(
     // Error messages to display.
     'error_level' => ERROR_REPORTING_HIDE,
     // Cache pages for anonymous users.
@@ -638,33 +645,51 @@ function prod_check_prod_mode_settings($options) {
     'preprocess_css' => 1,
     // Aggregate JavaScript files.
     'preprocess_js' => 1,
-  );
+    // Page compression. No page compression when running Varnish.
+    'page_compression' => (!module_exists('varnish') && !module_exists('steroids')) ? 1 : 0,
+  ));
 
-  // No page compression when running Varnish.
-  if (!module_exists('varnish') && !module_exists('steroids')) {
-    // Compress cached pages.
-    $variables['page_compression'] = 1;
-  }
-
-  // Site e-mail address.
-  if (isset($options['site_mail']) && !empty($options['site_mail'])) {
-    $variables['site_mail'] = $options['site_mail'];
-  }
-
-  // Webform default from e-mail address.
-  if (isset($options['webform_default_from_address']) && !empty($options['webform_default_from_address'])) {
-    $variables['webform_default_from_address'] = $options['webform_default_from_address'];
-  }
-
-  // Google analytics account.
-  if (isset($options['googleanalytics_account']) && !empty($options['googleanalytics_account'])) {
-    $variables['googleanalytics_account'] = $options['googleanalytics_account'];
-  }
-
-  // Set variables.
-  // @TODO Find way to use with config->set
-  foreach ($variables as $variable => $value) {
-    variable_set($variable, $value);
+  foreach ($settings as $setting => $value) {
+    switch($setting) {
+      case 'site_mail':
+        if (!empty($setting)) {
+          config_set('system.core', 'site_mail', $value);
+          $result['site_mail'] = $value;
+        }
+        break;
+      case 'googleanalytics_account':
+        if (module_exists('googleanalytics') && !empty($setting)) {
+          config_set('googleanalytics.settings', 'account', $value);
+          $result['googleanalytics_account'] = $value;
+        }
+        break;
+      case 'webform_default_from_address':
+        if (module_exists('webform') && !empty($setting)) {
+          config_set('webform.settings', 'default_from_address', $value);
+          $result['webform_default_from_address'] = $value;
+        }
+        break;
+      case 'error_level':
+        config_set('system.core', 'error_level', $value);
+        $result['error_level'] = $value;
+        break;
+      case 'cache':
+        config_set('system.core', 'cache', $value);
+        $result['cache'] = $value;
+        break;
+      case 'preprocess_css':
+        config_set('system.core', 'preprocess_css', $value);
+        $result['preprocess_css'] = $value;
+        break;
+      case 'preprocess_js':
+        config_set('system.core', 'preprocess_js', $value);
+        $result['preprocess_js'] = $value;
+        break;
+      case 'page_compression':
+        config_set('system.core', 'page_compression', $value);
+        $result['page_compression'] = $value;
+        break;
+    }
   }
 
   // Clear caches like the system_performance_settings() form does.
@@ -673,7 +698,7 @@ function prod_check_prod_mode_settings($options) {
   // Instead of calling system_clear_page_cache_submit()
   cache_clear_all('*', 'cache_page', TRUE);
 
-  return $variables;
+  return $result;
 }
 
 /**

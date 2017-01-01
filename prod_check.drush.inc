@@ -86,8 +86,6 @@ function drush_prod_check_prod_mode() {
       $options['googleanalytics_account'] = drush_prompt(dt('Google Analytics Web Property ID'));
     }
 
-    $options['block_cache'] = drush_confirm(dt('Enable Block cache'));
-
     if (module_exists('dblog')) {
       $options['dblog'] = drush_confirm(dt('Disable Database logging'));
     }
