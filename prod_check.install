@@ -4,18 +4,11 @@
  * Implementation of hook_install().
  */
 function prod_check_install() {
+  backdrop_set_message(t('You can !configure or visit the !report.', array('!configure' => l(t('configure Production check'), 'admin/config/system/prod-check'), '!report' => l(t('Production check report'), 'admin/reports/prod-check' ))));
+
   // Allow immediate fetching of module data by prod_mon after installation
   // for remote the module status update checking feature.
-  variable_set('prod_check_module_list_lastrun', -1);
   state_set('prod_check_module_list_lastrun', -1);
-}
-
-/**
- * Implementation of hook_uninstall().
- */
-function prod_check_uninstall() {
-  // This beats multiple variable_del() calls.
-  db_delete('variable')->condition('name', 'prod_check\_%', 'LIKE')->execute();
 }
 
 /**
@@ -23,10 +16,11 @@ function prod_check_uninstall() {
  */
 function prod_check_requirements($phase) {
   $requirements = array();
+  $config = config('prod_check.settings');
 
   switch ($phase) {
     case 'runtime':
-      $sitemail = variable_get('prod_check_sitemail', '');
+      $sitemail = $config->get('sitemail');
       if (empty($sitemail)) {
         $requirements['prod_check_email'] = array(
           'title' => t('Production check'),
@@ -35,7 +29,7 @@ function prod_check_requirements($phase) {
           'description' => t('You have not changed the e-mail address on the prod-check !link. The Site e-mail check will not function properly. Please read the README.txt file.', prod_check_link_array('settings page', 'admin/config/system/prod-check')),
         );
       }
-      if (function_exists('apc_cache_info') && variable_get('prod_check_apcpass', 'password') == 'password') {
+      if (function_exists('apc_cache_info') && $config->get('password') == 'password') {
         $requirements['prod_check_apc_opc'] = array(
           'title' => t('Production check'),
           'value' => t('APC password not configured.'),
@@ -43,7 +37,7 @@ function prod_check_requirements($phase) {
           'description' => t('You have not !link for the APC status page. The page will function, but advanced options require that you set a password. Please read the README.txt file.', prod_check_link_array('changed the password', 'admin/config/system/prod-check')),
         );
       }
-      $nagios = variable_get('prod_check_enable_nagios', 0);
+      $nagios = $config->get('enable_nagios');
       if ($nagios && !module_exists('nagios')) {
         $requirements['prod_check_nagios'] = array(
           'title' => t('Production check'),

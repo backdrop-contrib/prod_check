@@ -1386,12 +1386,12 @@ function _prod_check_contact($caller = 'internal') {
   // Check all mails in the contact table.
   $prod_check_sitemail = preg_quote(config_get('prod_check.settings', 'sitemail'));
   $categories = array();
-  $result = db_query('SELECT category, recipients FROM {contact}');
+  $result = config_get('contact.categories', 'categories');
   foreach ($result as $row) {
-    $recipients = explode(',', $row->recipients);
+    $recipients = explode(',', $row['recipients']);
     foreach ($recipients as $mail) {
       if (preg_match('/' . $prod_check_sitemail . '/i', $mail)) {
-        $categories[] = $row->category . ': ' . $mail;
+        $categories[] = $row['category'] . ': ' . $mail;
         $error = TRUE;
       }
     }

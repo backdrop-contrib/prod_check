@@ -185,7 +185,7 @@ function prod_check_settings_form($form, &$form_state) {
     $form['prod_check_xmlrpc']['xmlrpc']['prod_check_xmlrpc_key'] = array(
       '#type' => 'textfield',
       '#title' => t('API key'),
-      '#default_value' => !empty($config->get('xmlrpc_key')) ? $config->get('xmlrpc_key') : prod_check_generate_key()),
+      '#default_value' => !empty($config->get('xmlrpc_key')) ? $config->get('xmlrpc_key') : prod_check_generate_key(),
       '#maxlength' => 128,
       '#size' => 60,
       '#description' => t('Enter a key here to ensure secure transfer of data over the API. Use a mixture of alphanumeric and special characters for increased security.'),
