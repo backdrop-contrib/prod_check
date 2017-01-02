@@ -1899,16 +1899,17 @@ function _prod_check_backdrop_updates($caller = 'internal') {
   }
 
   foreach ($data as $project) {
+    if ($project['status'] == '-4') {
+      $secure = FALSE;
+      $value_nok = t('Stale information');
+      $msg_nok = t('Unable to determine if there are any security updates. Refresh the module information on the !link report.', prod_check_link_array('available updates', $path));
+      continue;
+    }
     if ($project['status'] == 1) {
       $secure = FALSE;
       $severity = ($caller == 'nagios') ? NAGIOS_STATUS_CRITICAL : PROD_CHECK_REQUIREMENT_ERROR;
       $value_nok = t('Security updates available');
       $msg_nok = t('There are security updates available for one or more of your modules or themes. To ensure the security of your server, you should update immediately! See the !link page for more information.', prod_check_link_array('available updates', $path));
-      continue;
-    }
-    if ($project['status'] == -4) {
-      $value_nok = t('Module update information stale');
-      $msg_nok = t('Unable to determine if there are any security updates. Refresh the module information on the !link report.', prod_check_link_array('available updates', $path));
       continue;
     }
   }
