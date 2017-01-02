@@ -603,7 +603,7 @@ function _prod_check_functions() {
       '_prod_check_contact' => 'Contact',
       '_prod_check_devel' => 'Devel',
 //      '_prod_check_search_config' => 'Search config',
-      '_prod_check_update_status' => 'Update status',
+//      '_prod_check_update_status' => 'Update status',
       '_prod_check_webform' =>  'Webform',
 //      '_prod_check_mimemail' => 'Mimemail',
       '_prod_check_missing_module_files' => 'Active modules',
@@ -1521,6 +1521,7 @@ function _prod_check_search_config($caller = 'internal') {
 }
 
 // Update status
+/*
 function _prod_check_update_status($caller = 'internal') {
   $check = array();
 
@@ -1544,6 +1545,7 @@ function _prod_check_update_status($caller = 'internal') {
 
   return prod_check_execute_check($check, $caller);
 }
+*/
 
 // Webform
 function _prod_check_webform($caller = 'internal') {

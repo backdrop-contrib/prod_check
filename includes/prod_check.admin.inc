@@ -710,7 +710,7 @@ function prod_check_prod_mode_modules($options) {
     'devel_generate',
     'devel_node_access',
     'devel_themer',
-    'update',
+//    'update',
   );
 
   if (isset($options['dblog']) && $options['dblog']) {
