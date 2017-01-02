@@ -2,7 +2,7 @@
 
   // Prod check settings page styling.
 
-  Drupal.behaviors.prod_check = {
+  Backdrop.behaviors.prod_check = {
     attach: function(context, settings) {
       $('#edit-prod-check-module-list-time', context).mask('99:99');
       $('#prod-check-settings', context).equalHeights('px');

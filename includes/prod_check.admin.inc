@@ -620,7 +620,7 @@ function prod_check_prod_mode_form_submit($form, &$form_state) {
   backdrop_set_message(t('The following settings have been changed: %variables.', array('%variables' => implode(', ', array_keys($variables)))));
 
   // Enable / disable modules.
-  //$modules = prod_check_prod_mode_modules($form_state['values']);
+  $modules = prod_check_prod_mode_modules($form_state['values']);
   if (!empty($modules['disable'])) {
     backdrop_set_message(t('The following modules have been <strong>disabled</strong>: %modules.', array('%modules' => implode(', ', $modules['disable']))));
   }
